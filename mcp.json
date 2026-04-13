@@ -1,0 +1,228 @@
+{
+  "name": "scripture-intelligence-server",
+  "version": "1.0.0",
+  "description": "Advanced MCP server for Bible study with natural language queries, cross-references, and faith-based reasoning",
+  "author": "Scripture Intelligence Team",
+  "license": "MIT",
+  "homepage": "https://github.com/scripture-intelligence/mcp-server",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/scripture-intelligence/mcp-server.git"
+  },
+  "keywords": [
+    "mcp",
+    "bible",
+    "scripture",
+    "theology",
+    "christianity",
+    "bible-study",
+    "cross-reference",
+    "devotional",
+    "hebrew",
+    "greek",
+    "strongs",
+    "faith",
+    "religion"
+  ],
+  "mcp": {
+    "server": {
+      "command": "node",
+      "args": ["./dist/index.js"],
+      "env": {
+        "NODE_ENV": "production"
+      }
+    },
+    "tools": [
+      {
+        "name": "search_scripture",
+        "description": "Search the Bible for specific verses, topics, or themes using natural language queries",
+        "examples": [
+          "What does forgiveness mean in Matthew 18?",
+          "Find verses about hope in Psalms",
+          "Explain grace in Romans"
+        ]
+      },
+      {
+        "name": "get_verse_analysis",
+        "description": "Get comprehensive analysis of a specific Bible verse including context, cross-references, and original language insights",
+        "examples": [
+          "Analyze John 3:16",
+          "Explain Matthew 18:21-22",
+          "Get context for Psalm 23:4"
+        ]
+      },
+      {
+        "name": "find_cross_references",
+        "description": "Find cross-references and parallel passages for a specific verse",
+        "examples": [
+          "Cross-references for Isaiah 53:5",
+          "Parallel passages in the Gospels",
+          "Connections between Hebrews and Old Testament"
+        ]
+      },
+      {
+        "name": "generate_devotional",
+        "description": "Generate a daily or topical devotional with scripture, reflection, prayer, and application",
+        "examples": [
+          "Daily devotional for today",
+          "Devotional about faith",
+          "Devotional based on Romans 8:28"
+        ]
+      },
+      {
+        "name": "explain_original_language",
+        "description": "Get detailed explanation of original Hebrew/Greek words and their theological significance",
+        "examples": [
+          "Explain the Greek word 'agape'",
+          "What does 'chesed' mean in Hebrew?",
+          "Analyze 'logos' in John 1:1"
+        ]
+      },
+      {
+        "name": "compare_translations",
+        "description": "Compare different Bible translations of a specific verse and analyze theological implications",
+        "examples": [
+          "Compare John 3:16 translations",
+          "ESV vs NIV on Romans 12:1",
+          "Translation differences in Genesis 1:1"
+        ]
+      },
+      {
+        "name": "faith_reasoning",
+        "description": "Get faith-based explanations, theological answers, or spiritual guidance for questions",
+        "examples": [
+          "What does the Bible teach about suffering?",
+          "How should Christians handle anxiety?",
+          "Explain the concept of Trinity"
+        ]
+      },
+      {
+        "name": "explain_doctrine",
+        "description": "Get comprehensive explanation of Christian doctrines with biblical basis and historical development",
+        "examples": [
+          "Doctrine of the Trinity",
+          "Atonement theories",
+          "Justification by faith"
+        ]
+      },
+      {
+        "name": "get_historical_context",
+        "description": "Get historical, cultural, and literary context for Bible passages",
+        "examples": [
+          "Historical context of Romans",
+          "Cultural background of Genesis",
+          "Literary genre of Revelation"
+        ]
+      }
+    ],
+    "capabilities": [
+      "natural-language-processing",
+      "cross-reference-analysis",
+      "original-language-study",
+      "theological-reasoning",
+      "historical-context",
+      "devotional-generation",
+      "translation-comparison",
+      "semantic-search"
+    ],
+    "requirements": {
+      "node": ">=18.0.0",
+      "memory": "512MB",
+      "storage": "100MB"
+    },
+    "configuration": {
+      "databasePath": {
+        "type": "string",
+        "default": "./scripture_intelligence.db",
+        "description": "Path to SQLite database file"
+      },
+      "defaultTranslation": {
+        "type": "string",
+        "default": "ESV",
+        "enum": ["ESV", "NIV", "KJV", "NASB"],
+        "description": "Default Bible translation"
+      },
+      "enableOriginalLanguages": {
+        "type": "boolean",
+        "default": true,
+        "description": "Enable Hebrew/Greek analysis features"
+      },
+      "enableHistoricalContext": {
+        "type": "boolean",
+        "default": true,
+        "description": "Enable historical and cultural context features"
+      },
+      "enableTheologicalAnalysis": {
+        "type": "boolean",
+        "default": true,
+        "description": "Enable theological theme analysis"
+      },
+      "cacheSize": {
+        "type": "number",
+        "default": 1000,
+        "description": "Query cache size for performance"
+      }
+    },
+    "installation": {
+      "npm": "npm install scripture-intelligence-server",
+      "yarn": "yarn add scripture-intelligence-server",
+      "pnpm": "pnpm add scripture-intelligence-server"
+    },
+    "usage": {
+      "mcp-client": {
+        "claude-desktop": {
+          "configuration": {
+            "mcpServers": {
+              "scripture-intelligence": {
+                "command": "node",
+                "args": ["./node_modules/scripture-intelligence-server/dist/index.js"],
+                "env": {
+                  "SCRIPTURE_DB_PATH": "./scripture_intelligence.db"
+                }
+              }
+            }
+          }
+        }
+      },
+      "examples": [
+        "Search for verses about love: 'search_scripture' with query 'What does the Bible teach about love?'",
+        "Analyze John 3:16: 'get_verse_analysis' with book='John', chapter=3, verse=16",
+        "Generate daily devotional: 'generate_devotional' with type='daily'",
+        "Explain Greek word: 'explain_original_language' with word='agape', language='greek'"
+      ]
+    },
+    "data_sources": {
+      "bible_translations": ["ESV", "NIV", "KJV", "NASB"],
+      "original_languages": {
+        "hebrew": "Strong's Hebrew Dictionary",
+        "greek": "Strong's Greek Dictionary"
+      },
+      "cross_references": "Comprehensive cross-reference database",
+      "historical_data": "Biblical historical and cultural context",
+      "theological_themes": "Systematic theology framework"
+    },
+    "theological_perspective": {
+      "approach": "Conservative evangelical",
+      "interpretation": "Historical-grammatical method",
+      "authority": "Divine inspiration of Scripture",
+      "unity": "Theological coherence of biblical revelation"
+    },
+    "support": {
+      "documentation": "https://github.com/scripture-intelligence/mcp-server/wiki",
+      "issues": "https://github.com/scripture-intelligence/mcp-server/issues",
+      "discussions": "https://github.com/scripture-intelligence/mcp-server/discussions"
+    },
+    "changelog": {
+      "1.0.0": [
+        "Initial release",
+        "Natural language Bible search",
+        "Cross-reference engine",
+        "Original language analysis",
+        "Devotional generation",
+        "Faith-based reasoning",
+        "Historical context analysis",
+        "Translation comparison"
+      ]
+    }
+  }
+}
