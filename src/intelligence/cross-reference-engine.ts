@@ -1,4 +1,4 @@
-import { BibleVerse, CrossReference, TheologicalTheme } from '../types/index.js';
+import { BibleVerse, CrossReference } from '../types/index.js';
 import { BibleDatabase } from '../database/bible-data.js';
 
 export class CrossReferenceEngine {

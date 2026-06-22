@@ -37,7 +37,7 @@ export class OriginalLanguagesProcessor {
     };
   }
 
-  async explainHebrewWord(word: string, context?: string): Promise<{
+  async explainHebrewWord(word: string, _context?: string): Promise<{
     word: string;
     transliteration: string;
     strongNumber: string;
@@ -72,7 +72,7 @@ export class OriginalLanguagesProcessor {
     };
   }
 
-  async explainGreekWord(word: string, context?: string): Promise<{
+  async explainGreekWord(word: string, _context?: string): Promise<{
     word: string;
     transliteration: string;
     strongNumber: string;
@@ -111,7 +111,9 @@ export class OriginalLanguagesProcessor {
     reference: string;
     translations: Array<{
       name: string;
-      text: string;
+      text?: string;
+      available: boolean;
+      note?: string;
       characteristics: string;
       originalLanguageInsights: string[];
     }>;
@@ -129,22 +131,29 @@ export class OriginalLanguagesProcessor {
       {
         name: 'ESV',
         text: await this.getTranslationText(book, chapter, verse, 'ESV'),
+        available: false,
         characteristics: 'Essentially literal translation, emphasizing word-for-word accuracy while maintaining readability',
         originalLanguageInsights: ['Maintains Hebrew/Greek word order', 'Emphasizes theological precision']
       },
       {
         name: 'NIV',
         text: await this.getTranslationText(book, chapter, verse, 'NIV'),
+        available: false,
         characteristics: 'Dynamic equivalence translation, balancing accuracy with contemporary readability',
         originalLanguageInsights: ['Focuses on meaning over form', 'Uses contemporary idioms']
       },
       {
         name: 'KJV',
         text: await this.getTranslationText(book, chapter, verse, 'KJV'),
+        available: false,
         characteristics: 'Formal equivalence translation using traditional language, influential in English-speaking Christianity',
         originalLanguageInsights: ['Preserves traditional renderings', 'Uses formal language structure']
       }
-    ];
+    ].map((translation) => ({
+      ...translation,
+      available: Boolean(translation.text),
+      note: translation.text ? undefined : 'This translation text is not loaded in the local database. Add a licensed or public-domain translation dataset to compare wording directly.',
+    }));
 
     const keyDifferences = this.identifyTranslationDifferences(translations);
     const theologicalImplications = this.analyzeTheologicalImplications(keyDifferences);
@@ -347,7 +356,7 @@ export class OriginalLanguagesProcessor {
     const lexicon = this.getHebrewLexicon();
     const wordLower = word.toLowerCase();
     
-    for (const [key, value] of Object.entries(lexicon)) {
+    for (const key of Object.keys(lexicon)) {
       if (key.includes(wordLower) || wordLower.includes(key)) {
         return key;
       }
@@ -360,7 +369,7 @@ export class OriginalLanguagesProcessor {
     const lexicon = this.getGreekLexicon();
     const wordLower = word.toLowerCase();
     
-    for (const [key, value] of Object.entries(lexicon)) {
+    for (const key of Object.keys(lexicon)) {
       if (key.includes(wordLower) || wordLower.includes(key)) {
         return key;
       }
@@ -379,7 +388,7 @@ export class OriginalLanguagesProcessor {
            greekLexicon[this.findSimilarGreekWord(word)];
   }
 
-  private async findBibleUsage(word: string, language: 'hebrew' | 'greek'): Promise<Array<{
+  private async findBibleUsage(word: string, _language: 'hebrew' | 'greek'): Promise<Array<{
     reference: string;
     context: string;
     significance: string;
@@ -444,30 +453,39 @@ export class OriginalLanguagesProcessor {
     return {};
   }
 
-  private async getTranslationText(book: string, chapter: number, verse: number, translation: string): Promise<string> {
-    // This would query different translation databases
-    // For now, we'll return a placeholder
-    return `[${translation} text for ${book} ${chapter}:${verse}]`;
+  private async getTranslationText(book: string, chapter: number, verse: number, translation: string): Promise<string | undefined> {
+    const localVerse = await this.db.getVerse(book, chapter, verse);
+    if (localVerse?.translation.toUpperCase() === translation.toUpperCase()) {
+      return localVerse.text;
+    }
+    return undefined;
   }
 
   private identifyTranslationDifferences(translations: Array<{
     name: string;
-    text: string;
+    text?: string;
     characteristics: string;
   }>): string[] {
     const differences: string[] = [];
+    const availableTranslations = translations.filter((translation) => translation.text);
+
+    if (availableTranslations.length < 2) {
+      return [
+        'Direct wording comparison requires at least two loaded translation texts. The server currently reports availability honestly instead of fabricating comparison text.',
+      ];
+    }
     
     // Compare word choices between translations
-    for (let i = 0; i < translations.length; i++) {
-      for (let j = i + 1; j < translations.length; j++) {
-        const words1 = translations[i].text.split(/\s+/);
-        const words2 = translations[j].text.split(/\s+/);
+    for (let i = 0; i < availableTranslations.length; i++) {
+      for (let j = i + 1; j < availableTranslations.length; j++) {
+        const words1 = availableTranslations[i].text!.split(/\s+/);
+        const words2 = availableTranslations[j].text!.split(/\s+/);
         
         const differentWords = words1.filter(word => !words2.includes(word));
         
         if (differentWords.length > 0) {
           differences.push(
-            `${translations[i].name} uses "${differentWords.join(', ')}" while ${translations[j].name} uses different wording`
+            `${availableTranslations[i].name} uses "${differentWords.join(', ')}" while ${availableTranslations[j].name} uses different wording`
           );
         }
       }

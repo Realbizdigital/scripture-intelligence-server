@@ -1,4 +1,4 @@
-import { BibleVerse, TheologicalTheme, QueryResult } from '../types/index.js';
+import { BibleVerse } from '../types/index.js';
 import { BibleDatabase } from '../database/bible-data.js';
 
 export class FaithReasoningAssistant {
@@ -13,7 +13,7 @@ export class FaithReasoningAssistant {
     const principles = await this.extractBiblicalPrinciples(verses);
     const applications = await this.generateFaithApplications(verses, question);
     
-    return this.constructExplanation(verses, context, principles, applications, question);
+    return this.constructExplanation(verses, context, principles, applications);
   }
 
   async answerTheologicalQuestion(question: string): Promise<string> {
@@ -191,8 +191,7 @@ export class FaithReasoningAssistant {
     verses: BibleVerse[], 
     context: string, 
     principles: string[], 
-    applications: string[], 
-    question: string
+    applications: string[]
   ): string {
     const verseReferences = verses.map(v => `${v.book} ${v.chapter}:${v.verse}`).join(', ');
     

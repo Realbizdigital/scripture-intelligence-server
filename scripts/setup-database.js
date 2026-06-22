@@ -1,373 +1,218 @@
-import { BibleDatabase } from '../src/database/bible-data.js';
-import { BibleVerse } from '../src/types/index.js';
+import { BibleDatabase } from '../dist/database/bible-data.js';
 
-// Sample Bible data for demonstration
+const dbPath = process.env.SCRIPTURE_DB_PATH || './scripture_intelligence.db';
+const quiet = process.argv.includes('--quiet') || process.env.SCRIPTURE_SEED_QUIET === '1';
+const log = (...args) => {
+  if (!quiet) {
+    console.log(...args);
+  }
+};
+
 const sampleVerses = [
-  // John 3:16 - Famous salvation verse
   {
     book: 'John',
     chapter: 3,
     verse: 16,
     text: 'For God so loved the world, that he gave his only Son, that whoever believes in him should not perish but have eternal life.',
     translation: 'ESV',
-    originalGreek: 'Outos gar hégapesen ho theos ton kosmon, hoste ton huion autou ton monogené edoken, hina pas ho pisteuón eis auton mé apolétai all eché zóén aiónion.',
-    strongNumbers: ['G3739', 'G25', 'G2316', 'G3588', 'G2889', 'G5620', 'G3588', G5207, 'G846', 'G3439', 'G1325', 'G2443', 'G3956', 'G3588', 'G4100', 'G1519', 'G846', 'G3361', 'G622', 'G235', 'G2192', 'G2222', 'G166', 'G165', 'G2222']
+    originalGreek: 'Outos gar egapesen ho theos ton kosmon, hoste ton huion autou ton monogene edoken, hina pas ho pisteuon eis auton me apoletai all eche zoen aionion.',
+    strongNumbers: ['G3739', 'G25', 'G2316', 'G3588', 'G2889', 'G5620', 'G3588', 'G5207', 'G846', 'G3439', 'G1325', 'G2443', 'G3956', 'G3588', 'G4100', 'G1519', 'G846', 'G3361', 'G622', 'G235', 'G2192', 'G2222', 'G166', 'G165', 'G2222'],
   },
-  
-  // Matthew 18:21-22 - Forgiveness
+  {
+    book: 'Romans',
+    chapter: 5,
+    verse: 8,
+    text: 'but God shows his love for us in that while we were still sinners, Christ died for us.',
+    translation: 'ESV',
+  },
+  {
+    book: '1 John',
+    chapter: 4,
+    verse: 9,
+    text: 'In this the love of God was made manifest among us, that God sent his only Son into the world, so that we might live through him.',
+    translation: 'ESV',
+  },
   {
     book: 'Matthew',
     chapter: 18,
     verse: 21,
     text: 'Then Peter came up and said to him, "Lord, how often will my brother sin against me, and I forgive him? As many as seven times?"',
-    translation: 'ESV'
+    translation: 'ESV',
   },
   {
     book: 'Matthew',
     chapter: 18,
     verse: 22,
     text: 'Jesus said to him, "I do not say to you seven times, but seventy-seven times."',
-    translation: 'ESV'
+    translation: 'ESV',
   },
-
-  // Romans 8:28 - God's sovereignty
+  {
+    book: 'Luke',
+    chapter: 17,
+    verse: 4,
+    text: 'and if he sins against you seven times in the day, and turns to you seven times, saying, "I repent," you must forgive him.',
+    translation: 'ESV',
+  },
   {
     book: 'Romans',
     chapter: 8,
     verse: 28,
     text: 'And we know that for those who love God all things work together for good, for those who are called according to his purpose.',
-    translation: 'ESV'
+    translation: 'ESV',
   },
-
-  // Psalm 23:1 - Shepherd psalm
+  {
+    book: 'Genesis',
+    chapter: 50,
+    verse: 20,
+    text: 'As for you, you meant evil against me, but God meant it for good.',
+    translation: 'ESV',
+  },
   {
     book: 'Psalm',
     chapter: 23,
     verse: 1,
     text: 'The LORD is my shepherd; I shall not want.',
     translation: 'ESV',
-    originalHebrew: 'YHWH ro\'i lo echsar.',
-    strongNumbers: ['H3068', 'H7462', 'H3808', 'H2637']
+    originalHebrew: "YHWH ro'i lo echsar.",
+    strongNumbers: ['H3068', 'H7462', 'H3808', 'H2637'],
   },
-
-  // 1 Corinthians 13:4-7 - Love chapter
   {
     book: '1 Corinthians',
     chapter: 13,
     verse: 4,
     text: 'Love is patient and kind; love does not envy or boast; it is not arrogant.',
-    translation: 'ESV'
+    translation: 'ESV',
   },
   {
     book: '1 Corinthians',
     chapter: 13,
     verse: 5,
     text: 'or rude. It does not insist on its own way; it is not irritable or resentful;',
-    translation: 'ESV'
+    translation: 'ESV',
   },
   {
     book: '1 Corinthians',
     chapter: 13,
     verse: 6,
     text: 'it does not rejoice at wrongdoing, but rejoices with the truth.',
-    translation: 'ESV'
+    translation: 'ESV',
   },
   {
     book: '1 Corinthians',
     chapter: 13,
     verse: 7,
     text: 'Love bears all things, believes all things, hopes all things, endures all things.',
-    translation: 'ESV'
+    translation: 'ESV',
   },
-
-  // Hebrews 11:1 - Faith definition
   {
     book: 'Hebrews',
     chapter: 11,
     verse: 1,
     text: 'Now faith is the assurance of things hoped for, the conviction of things not seen.',
-    translation: 'ESV'
+    translation: 'ESV',
   },
-
-  // Ephesians 2:8-9 - Grace and salvation
   {
     book: 'Ephesians',
     chapter: 2,
     verse: 8,
     text: 'For by grace you have been saved through faith. And this is not your own doing; it is the gift of God,',
-    translation: 'ESV'
+    translation: 'ESV',
   },
   {
     book: 'Ephesians',
     chapter: 2,
     verse: 9,
     text: 'not a result of works, so that no one may boast.',
-    translation: 'ESV'
+    translation: 'ESV',
   },
-
-  // Genesis 1:1 - Creation
   {
     book: 'Genesis',
     chapter: 1,
     verse: 1,
     text: 'In the beginning, God created the heavens and the earth.',
     translation: 'ESV',
-    originalHebrew: 'Bereshit bara Elohim et hashamayim ve\'et ha\'aretz.',
-    strongNumbers: ['H7225', 'H1254', 'H430', 'H853', 'H8064', 'H853', 'H776']
-  }
+    originalHebrew: "Bereshit bara Elohim et hashamayim ve'et ha'aretz.",
+    strongNumbers: ['H7225', 'H1254', 'H430', 'H853', 'H8064', 'H853', 'H776'],
+  },
 ];
 
-// Sample cross-references
 const sampleCrossReferences = [
-  {
-    source_book: 'John',
-    source_chapter: 3,
-    source_verse: 16,
-    target_book: 'Romans',
-    target_chapter: 5,
-    target_verse: 8,
-    relationship: 'theological parallel - God\'s love demonstrated',
-    theological_theme: 'love'
-  },
-  {
-    source_book: 'John',
-    source_chapter: 3,
-    source_verse: 16,
-    target_book: '1 John',
-    target_chapter: 4,
-    target_verse: 9,
-    relationship: 'thematic connection - God\'s love as basis for salvation',
-    theological_theme: 'love'
-  },
-  {
-    source_book: 'Matthew',
-    source_chapter: 18,
-    source_verse: 22,
-    target_book: 'Luke',
-    target_chapter: 17,
-    target_verse: 4,
-    relationship: 'parallel teaching on forgiveness',
-    theological_theme: 'forgiveness'
-  },
-  {
-    source_book: 'Romans',
-    source_chapter: 8,
-    source_verse: 28,
-    target_book: 'Genesis',
-    target_chapter: 50,
-    target_verse: 20,
-    relationship: 'theological connection - God\'s sovereign providence',
-    theological_theme: 'providence'
-  }
+  ['John', 3, 16, 'Romans', 5, 8, "theological parallel - God's love demonstrated", 'love'],
+  ['John', 3, 16, '1 John', 4, 9, "thematic connection - God's love as basis for salvation", 'love'],
+  ['Matthew', 18, 22, 'Luke', 17, 4, 'parallel teaching on forgiveness', 'forgiveness'],
+  ['Romans', 8, 28, 'Genesis', 50, 20, "theological connection - God's sovereign providence", 'providence'],
 ];
 
-// Sample historical context
 const sampleHistoricalContext = [
-  {
-    book: 'John',
-    chapter_start: 1,
-    chapter_end: 21,
-    period: 'Early 1st Century AD',
-    cultural_background: 'Greco-Roman world with Jewish religious context. Gospel written for both Jewish and Gentile audiences.',
-    political_situation: 'Roman occupation of Judea, tensions between Jewish authorities and Roman government.',
-    religious_context: 'Emerging Christianity separating from Judaism, various Jewish sects (Pharisees, Sadducees, Essenes).'
-  },
-  {
-    book: 'Matthew',
-    chapter_start: 1,
-    chapter_end: 28,
-    period: 'Mid-1st Century AD',
-    cultural_background: 'Jewish-Christian community transitioning to Gentile inclusion. Strong emphasis on Jewish fulfillment.',
-    political_situation: 'Post-Jewish War (70 AD), destruction of Temple, Christian-Jewish separation.',
-    religious_context: 'Church defining its identity apart from Judaism, establishing new worship patterns.'
-  },
-  {
-    book: 'Romans',
-    chapter_start: 1,
-    chapter_end: 16,
-    period: 'Mid-1st Century AD',
-    cultural_background: 'Urban Roman church with mixed Jewish-Gentile membership. Sophisticated theological environment.',
-    political_situation: 'Neronian persecution approaching, tensions in Roman Empire.',
-    religious_context: 'Christian theology developing in pagan environment, questions about law and grace.'
-  },
-  {
-    book: 'Genesis',
-    chapter_start: 1,
-    chapter_end: 50,
-    period: 'Patriarchal Period (c. 2000-1800 BC)',
-    cultural_background: 'Ancient Near Eastern nomadic and early agricultural societies.',
-    political_situation: 'City-states in Mesopotamia and Egypt, tribal confederations in Canaan.',
-    religious_context: 'Polytheistic surrounding cultures, emerging monotheism through covenant relationship.'
-  }
+  ['John', 1, 21, 'Early 1st Century AD', 'Greco-Roman world with Jewish religious context. Gospel written for both Jewish and Gentile audiences.', 'Roman occupation of Judea, with tensions between Jewish authorities and Roman government.', 'Emerging Christianity separating from Judaism amid diverse Jewish sects.'],
+  ['Matthew', 1, 28, 'Mid-1st Century AD', 'Jewish-Christian community emphasizing Jesus as the fulfillment of Scripture.', 'Roman rule and post-Temple Jewish identity questions shaped the audience.', 'The church was defining its worship, mission, and relation to Israel.'],
+  ['Romans', 1, 16, 'Mid-1st Century AD', 'Urban Roman church with mixed Jewish-Gentile membership.', 'Neronian persecution was approaching within the Roman Empire.', 'Christian theology was developing in a pagan environment, especially around law and grace.'],
+  ['Genesis', 1, 50, 'Patriarchal Period', 'Ancient Near Eastern nomadic and early agricultural societies.', 'City-states in Mesopotamia and Egypt influenced the world of the patriarchs.', 'Polytheistic surrounding cultures contrasted with covenant monotheism.'],
 ];
 
-// Sample linguistic analysis
 const sampleLinguisticAnalysis = [
-  {
-    book: 'John',
-    chapter: 3,
-    verse: 16,
-    word_position: 1,
-    original_language: 'greek',
-    original_word: 'agapé',
-    transliteration: 'agape',
-    strong_number: 'G26',
-    meaning: 'unconditional, selfless love',
-    usage: 'Highest form of love, characteristic of God and Christian ethics',
-    related_words: ['phileo', 'storge', 'eros']
-  },
-  {
-    book: 'John',
-    chapter: 3,
-    verse: 16,
-    word_position: 2,
-    original_language: 'greek',
-    original_word: 'pisteuón',
-    transliteration: 'pisteuo',
-    strong_number: 'G4100',
-    meaning: 'to believe, trust, have faith',
-    usage: 'Active trust and commitment, not mere intellectual assent',
-    related_words: ['pistis', 'apistia']
-  },
-  {
-    book: 'Genesis',
-    chapter: 1,
-    verse: 1,
-    word_position: 1,
-    original_language: 'hebrew',
-    original_word: 'bereshit',
-    transliteration: 'bereshit',
-    strong_number: 'H7225',
-    meaning: 'in beginning',
-    usage: 'Marks absolute beginning, emphasizes God\'s priority in creation',
-    related_words: ['rosh', 'rishon']
-  },
-  {
-    book: 'Genesis',
-    chapter: 1,
-    verse: 1,
-    word_position: 2,
-    original_language: 'hebrew',
-    original_word: 'bara',
-    transliteration: 'bara',
-    strong_number: 'H1254',
-    meaning: 'to create, bring into existence',
-    usage: 'Divine creation ex nihilo, used only of God in Hebrew Bible',
-    related_words: ['asah', 'yatsar']
-  }
+  ['John', 3, 16, 1, 'greek', 'agape', 'agape', 'G26', 'unconditional, selfless love', 'Highest form of love, characteristic of God and Christian ethics', 'phileo,storge,eros'],
+  ['John', 3, 16, 2, 'greek', 'pisteuon', 'pisteuo', 'G4100', 'to believe, trust, have faith', 'Active trust and commitment, not mere intellectual assent', 'pistis,apistia'],
+  ['Genesis', 1, 1, 1, 'hebrew', 'bereshit', 'bereshit', 'H7225', 'in beginning', "Marks the beginning and emphasizes God's priority in creation", 'rosh,rishon'],
+  ['Genesis', 1, 1, 2, 'hebrew', 'bara', 'bara', 'H1254', 'to create, bring into existence', 'Divine creation, used of God in the Hebrew Bible', 'asah,yatsar'],
 ];
 
-// Sample theological themes
 const sampleTheologicalThemes = [
-  {
-    name: 'love',
-    description: 'God\'s unconditional, sacrificial love that forms the foundation of all relationships',
-    historical_development: 'From covenant love in Old Testament to self-giving love in Christ, culminating in the call to love God and neighbor.'
-  },
-  {
-    name: 'faith',
-    description: 'Trust in God\'s character and promises that enables relationship with Him',
-    historical_development: 'From Abraham\'s faith to New Testament faith in Christ, developing from trust to comprehensive commitment.'
-  },
-  {
-    name: 'grace',
-    description: 'God\'s unmerited favor providing salvation and spiritual enablement',
-    historical_development: 'From favor in Old Testament to central means of salvation in Christ, contrasting with works-based systems.'
-  },
-  {
-    name: 'salvation',
-    description: 'God\'s deliverance from sin and its consequences through Christ\'s sacrifice',
-    historical_development: 'From physical deliverance to spiritual salvation, culminating in Christ\'s atoning work.'
-  }
+  ['love', "God's unconditional, sacrificial love that forms the foundation of all relationships", 'From covenant love in the Old Testament to self-giving love in Christ.'],
+  ['faith', "Trust in God's character and promises that enables relationship with Him", "From Abraham's faith to New Testament faith in Christ."],
+  ['grace', "God's unmerited favor providing salvation and spiritual enablement", 'From favor language in the Old Testament to salvation by grace in Christ.'],
+  ['salvation', "God's deliverance from sin and its consequences through Christ's sacrifice", "From physical deliverance to spiritual salvation culminating in Christ's atoning work."],
 ];
 
 async function setupDatabase() {
-  console.log('Setting up Scripture Intelligence database...');
-  
-  const db = new BibleDatabase('./scripture_intelligence.db');
-  
+  log(`Setting up Scripture Intelligence database at ${dbPath}...`);
+
+  const db = new BibleDatabase(dbPath);
+
   try {
     await db.initialize();
-    console.log('Database initialized successfully.');
-    
-    // Add sample verses
-    console.log('Adding sample verses...');
+
+    const alreadySeeded = await db.getVerse('John', 3, 16);
+    const forceSeed = process.env.FORCE_SCRIPTURE_SEED === '1' || process.env.FORCE_SCRIPTURE_SEED === 'true';
+
+    if (alreadySeeded && !forceSeed) {
+      log('Database already contains seed data. Set FORCE_SCRIPTURE_SEED=1 to refresh sample content.');
+      return;
+    }
+
+    if (typeof db.seedSampleData === 'function') {
+      const result = await db.seedSampleData({ force: forceSeed });
+      log(`Loaded ${result.verses} sample verses through the shared database seeder.`);
+      return;
+    }
+
     for (const verse of sampleVerses) {
       await db.addVerse(verse);
     }
-    console.log(`Added ${sampleVerses.length} verses.`);
-    
-    // Add sample cross-references
-    console.log('Adding sample cross-references...');
+
     for (const ref of sampleCrossReferences) {
-      await new Promise((resolve) => {
-        db.getDb().run(
-          `INSERT INTO cross_references 
-           (source_book, source_chapter, source_verse, target_book, target_chapter, target_verse, relationship, theological_theme)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [ref.source_book, ref.source_chapter, ref.source_verse, ref.target_book, ref.target_chapter, ref.target_verse, ref.relationship, ref.theological_theme],
-          resolve
-        );
-      });
+      await db.addCrossReference(...ref);
     }
-    console.log(`Added ${sampleCrossReferences.length} cross-references.`);
-    
-    // Add sample historical context
-    console.log('Adding sample historical context...');
+
     for (const context of sampleHistoricalContext) {
-      await new Promise((resolve) => {
-        db.getDb().run(
-          `INSERT INTO historical_context 
-           (book, chapter_start, chapter_end, period, cultural_background, political_situation, religious_context)
-           VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [context.book, context.chapter_start, context.chapter_end, context.period, context.cultural_background, context.political_situation, context.religious_context],
-          resolve
-        );
-      });
+      await db.addHistoricalContext(...context);
     }
-    console.log(`Added ${sampleHistoricalContext.length} historical contexts.`);
-    
-    // Add sample linguistic analysis
-    console.log('Adding sample linguistic analysis...');
+
     for (const analysis of sampleLinguisticAnalysis) {
-      await new Promise((resolve) => {
-        db.getDb().run(
-          `INSERT INTO linguistic_analysis 
-           (book, chapter, verse, word_position, original_language, original_word, transliteration, strong_number, meaning, usage, related_words)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [analysis.book, analysis.chapter, analysis.verse, analysis.word_position, analysis.original_language, analysis.original_word, analysis.transliteration, analysis.strong_number, analysis.meaning, analysis.usage, analysis.related_words.join(',')],
-          resolve
-        );
-      });
+      await db.addLinguisticAnalysis(...analysis);
     }
-    console.log(`Added ${sampleLinguisticAnalysis.length} linguistic analyses.`);
-    
-    // Add sample theological themes
-    console.log('Adding sample theological themes...');
+
     for (const theme of sampleTheologicalThemes) {
-      await new Promise((resolve) => {
-        db.getDb().run(
-          `INSERT INTO theological_themes (name, description, historical_development) VALUES (?, ?, ?)`,
-          [theme.name, theme.description, theme.historical_development],
-          resolve
-        );
-      });
+      await db.addTheologicalTheme(...theme);
     }
-    console.log(`Added ${sampleTheologicalThemes.length} theological themes.`);
-    
-    console.log('Database setup completed successfully!');
-    console.log('Sample data has been loaded for demonstration purposes.');
-    
-  } catch (error) {
-    console.error('Error setting up database:', error);
+
+    log(`Loaded ${sampleVerses.length} verses, ${sampleCrossReferences.length} cross-references, ${sampleHistoricalContext.length} context records, ${sampleLinguisticAnalysis.length} language records, and ${sampleTheologicalThemes.length} themes.`);
   } finally {
     db.close();
   }
 }
 
-// Helper method to get the raw database instance
-BibleDatabase.prototype.getDb = function() {
-  return this.db;
-};
-
-setupDatabase().catch(console.error);
+setupDatabase().catch((error) => {
+  console.error('Error setting up database:', error);
+  process.exitCode = 1;
+});

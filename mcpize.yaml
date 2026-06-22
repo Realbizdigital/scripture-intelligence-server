@@ -1,0 +1,13 @@
+version: 1
+name: barzel-scripture-intelligence
+description: Barzel Scripture Intelligence is a Bible MCP server for Scripture search, verse lookup, theology, sermon preparation, cross-references, Hebrew and Greek word studies, devotionals, apologetics, and Christian AI Bible study workflows.
+runtime: typescript
+entry: src/server/index.ts
+
+build:
+  install: npm ci
+  command: npm run setup:database
+
+startCommand:
+  type: stdio
+  command: npm run start:mcpize

@@ -1,18 +1,11 @@
 import { NaturalLanguageQuery, BibleVerse } from '../types/index.js';
-import * as natural from 'natural';
 
 export class QueryProcessor {
-  private tokenizer: any;
-  private stemmer: any;
-
-  constructor() {
-    this.tokenizer = new natural.WordTokenizer();
-    this.stemmer = natural.PorterStemmer;
-  }
+  private readonly wordPattern = /[a-z0-9]+(?::[0-9]+)?/gi;
 
   processQuery(text: string): NaturalLanguageQuery {
-    const tokens = this.tokenizer.tokenize(text.toLowerCase()) || [];
-    const stemmedTokens = tokens.map((token: string) => this.stemmer.stem(token));
+    const tokens = this.tokenize(text.toLowerCase());
+    const stemmedTokens = tokens.map((token: string) => this.stemToken(token));
 
     const entities = this.extractEntities(tokens, stemmedTokens);
     const intent = this.detectIntent(tokens, stemmedTokens);
@@ -25,7 +18,29 @@ export class QueryProcessor {
     };
   }
 
-  private extractEntities(tokens: string[], stemmedTokens: string[]): NaturalLanguageQuery['entities'] {
+  private tokenize(text: string): string[] {
+    return text.match(this.wordPattern) || [];
+  }
+
+  private stemToken(token: string): string {
+    return token
+      .replace(/(fulness|lessness|ingly|edly)$/u, '')
+      .replace(/(ing|ed|es|s)$/u, '');
+  }
+
+  private isBookToken(
+    token: string | undefined,
+    bibleBooks: string[],
+    bookAbbreviations: Record<string, string>
+  ): boolean {
+    return Boolean(token && (bibleBooks.includes(token) || bookAbbreviations[token]));
+  }
+
+  private isNumberedBookPrefix(token: string | undefined, nextToken: string | undefined, bibleBooks: string[]): boolean {
+    return Boolean(token && nextToken && /^[1-3]$/.test(token) && bibleBooks.includes(`${token} ${nextToken}`));
+  }
+
+  private extractEntities(tokens: string[], _stemmedTokens: string[]): NaturalLanguageQuery['entities'] {
     const entities: NaturalLanguageQuery['entities'] = {
       books: [],
       chapters: [],
@@ -114,6 +129,29 @@ export class QueryProcessor {
       // Standalone numbers (assume chapters if no verse context)
       else if (!isNaN(parseInt(token)) && !token.includes(':')) {
         const num = parseInt(token);
+
+        if (this.isNumberedBookPrefix(token, nextToken, bibleBooks)) {
+          continue;
+        }
+
+        const previousToken = tokens[i - 1];
+        const twoBackToken = tokens[i - 2];
+        const threeBackToken = tokens[i - 3];
+        const previousTokenIsBook = this.isBookToken(previousToken, bibleBooks, bookAbbreviations)
+          || this.isNumberedBookPrefix(twoBackToken, previousToken, bibleBooks);
+        const twoBackTokenIsBook = this.isBookToken(twoBackToken, bibleBooks, bookAbbreviations)
+          || this.isNumberedBookPrefix(threeBackToken, twoBackToken, bibleBooks);
+
+        if (num > 0 && previousTokenIsBook) {
+          entities.chapters!.push(num);
+          continue;
+        }
+
+        if (num > 0 && twoBackTokenIsBook && previousToken && !isNaN(parseInt(previousToken))) {
+          entities.verses!.push(num);
+          continue;
+        }
+
         if (num > 0 && num <= 150) { // Reasonable Bible chapter range
           entities.chapters!.push(num);
         }
@@ -142,7 +180,7 @@ export class QueryProcessor {
     return entities;
   }
 
-  private detectIntent(tokens: string[], stemmedTokens: string[]): NaturalLanguageQuery['intent'] {
+  private detectIntent(tokens: string[], _stemmedTokens: string[]): NaturalLanguageQuery['intent'] {
     const intentKeywords = {
       search: ['search', 'find', 'look', 'show', 'verse', 'passage', 'scripture'],
       explain: ['explain', 'meaning', 'what', 'why', 'how', 'interpret', 'understand'],

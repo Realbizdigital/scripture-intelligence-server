@@ -48,10 +48,6 @@ export class DevotionalGenerator {
   }
 
   private async selectScriptureForDay(dayOfYear: number): Promise<BibleVerse[]> {
-    // Create a systematic but varied reading plan
-    const totalVerses = 31102; // Approximate total verses in Bible
-    const startVerseIndex = (dayOfYear * 37) % totalVerses; // Spread throughout the year
-    
     // This would ideally use a pre-calculated reading plan
     // For now, we'll select from key passages
     const keyPassages = [
@@ -103,7 +99,7 @@ export class DevotionalGenerator {
       ...selectedTheme,
       keyVerses: [],
       relatedThemes: [],
-      historicalDevelopment: `${selectedTheme.name} is a central biblical theme that runs throughout Scripture, revealing God\'s character and His purposes for humanity.`
+      historicalDevelopment: `${selectedTheme.name} is a central biblical theme that runs throughout Scripture, revealing God's character and His purposes for humanity.`
     };
   }
 

@@ -124,7 +124,7 @@ export class ContextAnalyzer {
       'matthew': 'Matthew uses gospel format, employs fulfillment quotations, and structures teaching material into five major discourses.',
       'mark': 'Mark uses fast-paced narrative, employs irony and secrecy motifs, and emphasizes action over teaching to portray Jesus as suffering servant.',
       'luke': 'Luke uses orderly narrative, employs parables and journey motifs, and emphasizes Jesus\' concern for marginalized people.',
-      'john': 'John uses theological narrative, employs symbolism and irony, and uses \"I am\" sayings and signs to present high Christology.',
+      'john': 'John uses theological narrative, employs symbolism and irony, and uses "I am" sayings and signs to present high Christology.',
       'acts': 'Acts uses historical narrative, employs speech summaries, and uses geographical expansion to demonstrate church growth.',
       'romans': 'Romans uses logical argumentation, employs diatribe style, and systematically presents gospel theology.',
       '1 corinthians': '1 Corinthians uses letter format, employs rhetorical questions, and addresses specific church problems with theological solutions.',

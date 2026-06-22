@@ -16,6 +16,9 @@ build/
 .env.test.local
 .env.production.local
 
+# Local MCPize project link metadata
+.mcpize/
+
 # Database
 *.db
 *.sqlite

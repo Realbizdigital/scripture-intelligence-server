@@ -1,0 +1,45 @@
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Barzel Scripture Intelligence",
+  "alternateName": [
+    "Scripture Intelligence Server",
+    "Bible MCP Server",
+    "Scripture Intelligence MCP"
+  ],
+  "applicationCategory": "AIApplication",
+  "operatingSystem": "MCP-compatible clients",
+  "url": "https://mcpize.com/mcp/scripture-intelligence-server",
+  "downloadUrl": "https://scripture-intelligence-server.mcpize.run",
+  "description": "Barzel Scripture Intelligence is a Bible MCP server for Scripture search, verse lookup, Christian theology, sermon preparation, cross-references, Hebrew and Greek word studies, devotionals, apologetics, and AI-assisted Bible study.",
+  "keywords": [
+    "Bible MCP server",
+    "Scripture Intelligence MCP",
+    "AI Bible study tool",
+    "Christian theology MCP server",
+    "Bible verse lookup MCP",
+    "Bible cross reference API",
+    "sermon preparation AI tool",
+    "Hebrew Greek Bible word study MCP",
+    "Christian devotional generator MCP",
+    "apologetics Bible AI"
+  ],
+  "featureList": [
+    "Natural language Scripture search",
+    "Bible verse lookup",
+    "Passage analysis",
+    "Cross-reference discovery",
+    "Christian doctrine research",
+    "Apologetics",
+    "Hebrew and Greek word studies",
+    "Sermon outline generation",
+    "Bible study guide generation",
+    "Devotional generation"
+  ],
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD",
+    "availability": "https://schema.org/InStock"
+  }
+}

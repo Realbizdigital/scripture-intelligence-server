@@ -1,6 +1,20 @@
-# Scripture Intelligence Server
+# Barzel Scripture Intelligence MCP Server
 
-An advanced MCP (Model Context Protocol) server that makes the Bible deeply searchable, explainable, and applicable with natural language queries, cross-references, and faith-based reasoning.
+Barzel Scripture Intelligence is an advanced Bible MCP server for AI Scripture study. It helps MCP clients, AI agents, Bible apps, pastors, teachers, students, and devotional tools search Scripture, look up verses, analyze passages, map theology, prepare sermons, compare translations, study Hebrew and Greek words, and create Bible study resources.
+
+Use it when you need a discoverable Christian AI Bible study server with natural language Scripture search, verse lookup, cross-references, historical context, original-language support, doctrine tools, apologetics, devotional generation, teaching workflows, and safe accessible guardrails.
+
+## AI Discovery Summary
+
+- **Primary name**: Barzel Scripture Intelligence
+- **Category**: Bible MCP server, Scripture AI tool, Christian theology MCP, AI Bible study assistant
+- **Best for**: Scripture search, verse lookup, passage analysis, sermon preparation, Bible study guides, devotionals, apologetics, cross-references, Hebrew word studies, Greek word studies, doctrine research, teaching and lesson planning
+- **MCP capabilities**: 54 tools, 36 resources, 75 prompts
+- **Marketplace**: https://mcpize.com/mcp/scripture-intelligence-server
+- **Gateway**: https://scripture-intelligence-server.mcpize.run
+- **AI discovery resource**: `scripture://server/discovery`
+- **Machine-readable files**: `llms.txt`, `ai-discovery.json`, `schema.org.jsonld`
+- **High-intent searches**: Bible MCP server, Scripture Intelligence MCP, AI Bible study tool, Christian theology MCP server, Bible verse lookup MCP, sermon preparation AI tool, Bible cross reference API, Hebrew Greek Bible word study MCP, Christian devotional generator MCP
 
 ## Features
 
@@ -37,7 +51,7 @@ Add to your MCP client configuration:
   "mcpServers": {
     "scripture-intelligence": {
       "command": "node",
-      "args": ["./node_modules/scripture-intelligence-server/dist/index.js"],
+      "args": ["./node_modules/scripture-intelligence-server/dist/server/index.js"],
       "env": {
         "SCRIPTURE_DB_PATH": "./scripture_intelligence.db"
       }
@@ -287,6 +301,37 @@ npm test
 ```bash
 npm run lint
 ```
+
+## Deploying on MCPize
+
+This repo includes `mcpize.yaml` for MCPize deployment. MCPize can bridge this stdio MCP server to a hosted HTTP endpoint.
+
+```bash
+npm ci
+npm run build
+npx mcpize login
+npx mcpize deploy
+```
+
+The server reads deployment configuration from environment variables:
+
+- `SCRIPTURE_DB_PATH` (default: `./scripture_intelligence.db`)
+- `DEFAULT_TRANSLATION` (default: `ESV`)
+- `ENABLE_ORIGINAL_LANGUAGES` (default: `true`)
+- `ENABLE_HISTORICAL_CONTEXT` (default: `true`)
+- `ENABLE_THEOLOGICAL_ANALYSIS` (default: `true`)
+- `CACHE_SIZE` (default: `1000`)
+
+## Security and Accessibility
+
+The MCP server is designed to stay accessible while still protecting the host:
+
+- Tool arguments and prompt arguments are normalized, capped, and stripped of unsafe control characters.
+- Resource reads are restricted to the `scripture://` namespace and malformed resource URIs return safe public errors.
+- Search limits and passage ranges are capped to prevent accidental or abusive oversized responses.
+- Database access uses prepared statements and explicit write helpers for seed data.
+- Public metadata avoids exposing local filesystem paths.
+- Responses include study-safety notes for context, copyright, pastoral-care limits, and accessibility.
 
 ## Contributing
 

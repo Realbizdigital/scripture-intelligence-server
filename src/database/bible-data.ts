@@ -1,11 +1,20 @@
-import { Database } from 'sqlite3';
+import sqlite3 from 'sqlite3';
 import { BibleVerse, CrossReference, HistoricalContext, LinguisticAnalysis, TheologicalTheme } from '../types/index.js';
+import {
+  SAMPLE_CROSS_REFERENCES,
+  SAMPLE_HISTORICAL_CONTEXTS,
+  SAMPLE_LINGUISTIC_ANALYSES,
+  SAMPLE_THEOLOGICAL_THEMES,
+  SAMPLE_VERSES,
+} from './sample-data.js';
 
 export class BibleDatabase {
-  private db: Database;
+  private db: sqlite3.Database;
+  private readonly maxSearchLimit = 50;
+  private readonly maxPassageVerses = 200;
 
   constructor(dbPath: string) {
-    this.db = new Database(dbPath);
+    this.db = new sqlite3.Database(dbPath);
   }
 
   async initialize(): Promise<void> {
@@ -93,7 +102,14 @@ export class BibleDatabase {
             verse INTEGER NOT NULL,
             FOREIGN KEY (theme_id) REFERENCES theological_themes (id)
           )
-        `, (err) => {
+        `);
+
+        this.db.run('CREATE INDEX IF NOT EXISTS idx_verses_reference ON verses(book, chapter, verse)');
+        this.db.run('CREATE INDEX IF NOT EXISTS idx_verses_text ON verses(text)');
+        this.db.run('CREATE INDEX IF NOT EXISTS idx_cross_references_source ON cross_references(source_book, source_chapter, source_verse)');
+        this.db.run('CREATE INDEX IF NOT EXISTS idx_historical_context_lookup ON historical_context(book, chapter_start, chapter_end)');
+        this.db.run('CREATE INDEX IF NOT EXISTS idx_linguistic_analysis_lookup ON linguistic_analysis(book, chapter, verse)');
+        this.db.run('CREATE INDEX IF NOT EXISTS idx_theme_verses_lookup ON theme_verses(book, chapter, verse)', (err) => {
           if (err) reject(err);
           else resolve();
         });
@@ -127,21 +143,154 @@ export class BibleDatabase {
     });
   }
 
+  private async runStatement(sql: string, params: any[] = []): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.db.run(sql, params, (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+  }
+
+  async addCrossReference(
+    sourceBook: string,
+    sourceChapter: number,
+    sourceVerse: number,
+    targetBook: string,
+    targetChapter: number,
+    targetVerse: number,
+    relationship: string,
+    theologicalTheme?: string
+  ): Promise<void> {
+    await this.runStatement(
+      `INSERT OR REPLACE INTO cross_references
+       (source_book, source_chapter, source_verse, target_book, target_chapter, target_verse, relationship, theological_theme)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [sourceBook, sourceChapter, sourceVerse, targetBook, targetChapter, targetVerse, relationship, theologicalTheme || null]
+    );
+  }
+
+  async addHistoricalContext(
+    book: string,
+    chapterStart: number,
+    chapterEnd: number,
+    period: string,
+    culturalBackground: string,
+    politicalSituation: string,
+    religiousContext: string
+  ): Promise<void> {
+    await this.runStatement(
+      `INSERT OR REPLACE INTO historical_context
+       (book, chapter_start, chapter_end, period, cultural_background, political_situation, religious_context)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [book, chapterStart, chapterEnd, period, culturalBackground, politicalSituation, religiousContext]
+    );
+  }
+
+  async addLinguisticAnalysis(
+    book: string,
+    chapter: number,
+    verse: number,
+    wordPosition: number,
+    originalLanguage: string,
+    originalWord: string,
+    transliteration: string,
+    strongNumber: string,
+    meaning: string,
+    usage: string,
+    relatedWords: string
+  ): Promise<void> {
+    await this.runStatement(
+      `INSERT OR REPLACE INTO linguistic_analysis
+       (book, chapter, verse, word_position, original_language, original_word, transliteration, strong_number, meaning, usage, related_words)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [book, chapter, verse, wordPosition, originalLanguage, originalWord, transliteration, strongNumber, meaning, usage, relatedWords]
+    );
+  }
+
+  async addTheologicalTheme(name: string, description: string, historicalDevelopment: string): Promise<void> {
+    await this.runStatement(
+      'INSERT OR REPLACE INTO theological_themes (name, description, historical_development) VALUES (?, ?, ?)',
+      [name, description, historicalDevelopment]
+    );
+  }
+
+  async seedSampleData(options: { force?: boolean } = {}): Promise<{ seeded: boolean; verses: number }> {
+    const alreadySeeded = await this.getVerse('John', 3, 16);
+    if (alreadySeeded && !options.force) {
+      return { seeded: false, verses: 0 };
+    }
+
+    for (const verse of SAMPLE_VERSES) {
+      await this.addVerse(verse);
+    }
+
+    for (const ref of SAMPLE_CROSS_REFERENCES) {
+      await this.addCrossReference(
+        ref.sourceBook,
+        ref.sourceChapter,
+        ref.sourceVerse,
+        ref.targetBook,
+        ref.targetChapter,
+        ref.targetVerse,
+        ref.relationship,
+        ref.theologicalTheme
+      );
+    }
+
+    for (const context of SAMPLE_HISTORICAL_CONTEXTS) {
+      await this.addHistoricalContext(
+        context.book,
+        context.chapterStart,
+        context.chapterEnd,
+        context.period,
+        context.culturalBackground,
+        context.politicalSituation,
+        context.religiousContext
+      );
+    }
+
+    for (const analysis of SAMPLE_LINGUISTIC_ANALYSES) {
+      await this.addLinguisticAnalysis(
+        analysis.book,
+        analysis.chapter,
+        analysis.verse,
+        analysis.wordPosition,
+        analysis.originalLanguage,
+        analysis.originalWord,
+        analysis.transliteration,
+        analysis.strongNumber,
+        analysis.meaning,
+        analysis.usage,
+        analysis.relatedWords
+      );
+    }
+
+    for (const theme of SAMPLE_THEOLOGICAL_THEMES) {
+      await this.addTheologicalTheme(theme.name, theme.description, theme.historicalDevelopment);
+    }
+
+    return { seeded: true, verses: SAMPLE_VERSES.length };
+  }
+
   async searchVerses(query: string, books?: string[], limit: number = 50): Promise<BibleVerse[]> {
     return new Promise((resolve, reject) => {
+      const safeLimit = this.clampLimit(limit);
+      const safeQuery = String(query || '').slice(0, 8000);
+      const safeBooks = books?.slice(0, 12).map((book) => String(book).slice(0, 80));
       let sql = `
         SELECT * FROM verses 
         WHERE text LIKE ? 
       `;
-      const params: any[] = [`%${query}%`];
+      const params: any[] = [`%${safeQuery}%`];
 
-      if (books && books.length > 0) {
-        sql += ` AND book IN (${books.map(() => '?').join(',')})`;
-        params.push(...books);
+      if (safeBooks && safeBooks.length > 0) {
+        sql += ` AND book IN (${safeBooks.map(() => '?').join(',')})`;
+        params.push(...safeBooks);
       }
 
       sql += ` ORDER BY book, chapter, verse LIMIT ?`;
-      params.push(limit);
+      params.push(safeLimit);
 
       this.db.all(sql, params, (err, rows: any[]) => {
         if (err) {
@@ -184,6 +333,64 @@ export class BibleDatabase {
             });
           } else {
             resolve(null);
+          }
+        }
+      );
+    });
+  }
+
+  async getChapter(book: string, chapter: number): Promise<BibleVerse[]> {
+    return new Promise((resolve, reject) => {
+      this.db.all(
+        'SELECT * FROM verses WHERE book = ? AND chapter = ? ORDER BY verse',
+        [book, chapter],
+        (err, rows: any[]) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(rows.map(row => ({
+              book: row.book,
+              chapter: row.chapter,
+              verse: row.verse,
+              text: row.text,
+              translation: row.translation,
+              originalHebrew: row.original_hebrew,
+              originalGreek: row.original_greek,
+              strongNumbers: row.strong_numbers ? row.strong_numbers.split(',') : undefined
+            })));
+          }
+        }
+      );
+    });
+  }
+
+  async getPassage(book: string, chapter: number, startVerse: number, endVerse: number): Promise<BibleVerse[]> {
+    return new Promise((resolve, reject) => {
+      const safeStart = Math.max(1, Math.floor(startVerse));
+      const safeEnd = Math.min(
+        Math.max(safeStart, Math.floor(endVerse)),
+        safeStart + this.maxPassageVerses - 1
+      );
+
+      this.db.all(
+        `SELECT * FROM verses
+         WHERE book = ? AND chapter = ? AND verse >= ? AND verse <= ?
+         ORDER BY verse`,
+        [book, chapter, safeStart, safeEnd],
+        (err, rows: any[]) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(rows.map(row => ({
+              book: row.book,
+              chapter: row.chapter,
+              verse: row.verse,
+              text: row.text,
+              translation: row.translation,
+              originalHebrew: row.original_hebrew,
+              originalGreek: row.original_greek,
+              strongNumbers: row.strong_numbers ? row.strong_numbers.split(',') : undefined
+            })));
           }
         }
       );
@@ -342,5 +549,10 @@ export class BibleDatabase {
 
   close(): void {
     this.db.close();
+  }
+
+  private clampLimit(limit: number): number {
+    if (!Number.isFinite(limit)) return this.maxSearchLimit;
+    return Math.max(1, Math.min(Math.floor(limit), this.maxSearchLimit));
   }
 }
