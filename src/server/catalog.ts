@@ -414,8 +414,8 @@ const discoveryMetadata = {
   canonicalName: 'Barzel Scripture Intelligence',
   entityType: 'Bible MCP server',
   shortDescription: 'AI-ready Scripture Intelligence server for public-domain WEB/KJV/ASV Bible search, verse lookup, theology, sermon preparation, devotionals, and original-language study.',
-  marketplaceUrl: 'https://mcpize.com/mcp/barzel-scripture-intelligence',
-  gatewayUrl: 'https://barzel-scripture-intelligence.mcpize.run',
+  marketplaceUrl: 'https://mcpize.com/mcp/scripture-intelligence-server',
+  gatewayUrl: 'https://scripture-intelligence-server.mcpize.run',
   primaryAudience: [
     'MCP clients',
     'AI agents',

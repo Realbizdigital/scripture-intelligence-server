@@ -20,8 +20,8 @@ Barzel Scripture Intelligence is a Bible MCP server for AI Scripture study, Chri
 - Tools: 54
 - Resources: 36
 - Prompts: 75
-- Marketplace: https://mcpize.com/mcp/barzel-scripture-intelligence
-- Gateway: https://barzel-scripture-intelligence.mcpize.run
+- Marketplace: https://mcpize.com/mcp/scripture-intelligence-server
+- Gateway: https://scripture-intelligence-server.mcpize.run
 - AI discovery resource: scripture://server/discovery
 - Machine-readable discovery files: ai-discovery.json and schema.org.jsonld
 - Default full-text translation: WEB
