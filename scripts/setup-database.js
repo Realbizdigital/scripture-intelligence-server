@@ -1,12 +1,28 @@
 import { BibleDatabase } from '../dist/database/bible-data.js';
+import { importPublicDomainTranslations, PUBLIC_DOMAIN_TRANSLATIONS } from '../dist/database/public-domain-importer.js';
 
 const dbPath = process.env.SCRIPTURE_DB_PATH || './scripture_intelligence.db';
+const defaultTranslation = (process.env.DEFAULT_TRANSLATION || 'WEB').toUpperCase();
 const quiet = process.argv.includes('--quiet') || process.env.SCRIPTURE_SEED_QUIET === '1';
 const log = (...args) => {
   if (!quiet) {
     console.log(...args);
   }
 };
+
+function readBooleanEnv(name, fallback) {
+  const value = process.env[name];
+  if (value === undefined) return fallback;
+  return ['1', 'true', 'yes', 'on'].includes(String(value).toLowerCase());
+}
+
+function parseTranslationList(value) {
+  const allowed = new Set(PUBLIC_DOMAIN_TRANSLATIONS.map((source) => source.id));
+  return String(value || 'WEB,KJV,ASV')
+    .split(',')
+    .map((translation) => translation.trim().toUpperCase())
+    .filter((translation) => allowed.has(translation));
+}
 
 const sampleVerses = [
   {
@@ -167,7 +183,7 @@ const sampleTheologicalThemes = [
 async function setupDatabase() {
   log(`Setting up Scripture Intelligence database at ${dbPath}...`);
 
-  const db = new BibleDatabase(dbPath);
+  const db = new BibleDatabase(dbPath, defaultTranslation);
 
   try {
     await db.initialize();
@@ -177,36 +193,53 @@ async function setupDatabase() {
 
     if (alreadySeeded && !forceSeed) {
       log('Database already contains seed data. Set FORCE_SCRIPTURE_SEED=1 to refresh sample content.');
-      return;
-    }
-
-    if (typeof db.seedSampleData === 'function') {
+    } else if (typeof db.seedSampleData === 'function') {
       const result = await db.seedSampleData({ force: forceSeed });
       log(`Loaded ${result.verses} sample verses through the shared database seeder.`);
-      return;
+    } else {
+      for (const verse of sampleVerses) {
+        await db.addVerse(verse);
+      }
+
+      for (const ref of sampleCrossReferences) {
+        await db.addCrossReference(...ref);
+      }
+
+      for (const context of sampleHistoricalContext) {
+        await db.addHistoricalContext(...context);
+      }
+
+      for (const analysis of sampleLinguisticAnalysis) {
+        await db.addLinguisticAnalysis(...analysis);
+      }
+
+      for (const theme of sampleTheologicalThemes) {
+        await db.addTheologicalTheme(...theme);
+      }
+
+      log(`Loaded ${sampleVerses.length} verses, ${sampleCrossReferences.length} cross-references, ${sampleHistoricalContext.length} context records, ${sampleLinguisticAnalysis.length} language records, and ${sampleTheologicalThemes.length} themes.`);
     }
 
-    for (const verse of sampleVerses) {
-      await db.addVerse(verse);
-    }
+    if (readBooleanEnv('SCRIPTURE_IMPORT_PUBLIC_DOMAIN', true)) {
+      const translations = parseTranslationList(process.env.SCRIPTURE_IMPORT_TRANSLATIONS);
+      const forceImport = readBooleanEnv('FORCE_SCRIPTURE_IMPORT', false);
+      const timeoutMs = Number.parseInt(process.env.SCRIPTURE_IMPORT_TIMEOUT_MS || '120000', 10);
 
-    for (const ref of sampleCrossReferences) {
-      await db.addCrossReference(...ref);
-    }
+      if (translations.length === 0) {
+        throw new Error('SCRIPTURE_IMPORT_TRANSLATIONS did not contain any supported public-domain translations.');
+      }
 
-    for (const context of sampleHistoricalContext) {
-      await db.addHistoricalContext(...context);
+      const results = await importPublicDomainTranslations(db, {
+        translations,
+        force: forceImport,
+        timeoutMs: Number.isNaN(timeoutMs) ? 120000 : timeoutMs,
+        log,
+      });
+      const summary = results.map((result) => `${result.translation}:${result.verses}`).join(', ');
+      log(`Public-domain import status: ${summary}`);
+    } else {
+      log('Skipped public-domain Bible import because SCRIPTURE_IMPORT_PUBLIC_DOMAIN is disabled.');
     }
-
-    for (const analysis of sampleLinguisticAnalysis) {
-      await db.addLinguisticAnalysis(...analysis);
-    }
-
-    for (const theme of sampleTheologicalThemes) {
-      await db.addTheologicalTheme(...theme);
-    }
-
-    log(`Loaded ${sampleVerses.length} verses, ${sampleCrossReferences.length} cross-references, ${sampleHistoricalContext.length} context records, ${sampleLinguisticAnalysis.length} language records, and ${sampleTheologicalThemes.length} themes.`);
   } finally {
     db.close();
   }

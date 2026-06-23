@@ -67,7 +67,7 @@ import { ScriptureIntelligenceServer } from 'scripture-intelligence-server';
 
 const server = new ScriptureIntelligenceServer({
   databasePath: './scripture_intelligence.db',
-  defaultTranslation: 'ESV',
+  defaultTranslation: 'WEB',
   enableOriginalLanguages: true,
   enableHistoricalContext: true,
   enableTheologicalAnalysis: true,
@@ -203,11 +203,14 @@ Get historical and cultural context.
 ## Data Sources
 
 The server includes:
-- **Bible Text**: Multiple translations (ESV, NIV, KJV)
-- **Strong's Concordance**: Hebrew and Greek lexicon data
-- **Cross-References**: Comprehensive cross-reference database
-- **Historical Data**: Cultural and historical context information
-- **Theological Themes**: Systematic theology framework
+- **Bible Text**: Complete public-domain WEB, KJV, and ASV text imported from eBible USFM archives during database setup
+- **Modern Translation Metadata**: ESV, NIV, NKJV, NLT, CSB, and NASB are listed for comparison metadata, but full text is not bundled unless a properly licensed dataset is loaded
+- **Original-Language Study**: Curated Hebrew and Greek starter lexicon, Strong's-number examples, and per-verse sample language records
+- **Cross-References**: Curated starter cross-references and dynamic passage/search tools; larger cross-reference datasets should be loaded only with compatible licensing
+- **Historical Data**: Cultural and historical context seed records for major biblical sections
+- **Theological Themes**: Systematic theology framework and study scaffolds
+
+Run `npm run setup:database` before production use. By default it builds the project, seeds starter study data, and imports WEB, KJV, and ASV into SQLite. Use `SCRIPTURE_IMPORT_TRANSLATIONS=WEB` to import only WEB, or `SCRIPTURE_IMPORT_PUBLIC_DOMAIN=0` to skip corpus import for tests/offline development.
 
 ## Configuration Options
 
@@ -316,7 +319,10 @@ npx mcpize deploy
 The server reads deployment configuration from environment variables:
 
 - `SCRIPTURE_DB_PATH` (default: `./scripture_intelligence.db`)
-- `DEFAULT_TRANSLATION` (default: `ESV`)
+- `DEFAULT_TRANSLATION` (default: `WEB`)
+- `SCRIPTURE_IMPORT_PUBLIC_DOMAIN` (default: `true`)
+- `SCRIPTURE_IMPORT_TRANSLATIONS` (default: `WEB,KJV,ASV`)
+- `SCRIPTURE_IMPORT_TIMEOUT_MS` (default: `120000`)
 - `ENABLE_ORIGINAL_LANGUAGES` (default: `true`)
 - `ENABLE_HISTORICAL_CONTEXT` (default: `true`)
 - `ENABLE_THEOLOGICAL_ANALYSIS` (default: `true`)

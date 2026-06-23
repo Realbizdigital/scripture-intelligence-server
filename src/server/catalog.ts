@@ -413,7 +413,7 @@ const bibleBooks = [
 const discoveryMetadata = {
   canonicalName: 'Barzel Scripture Intelligence',
   entityType: 'Bible MCP server',
-  shortDescription: 'AI-ready Scripture Intelligence server for Bible search, verse lookup, theology, sermon preparation, devotionals, and original-language study.',
+  shortDescription: 'AI-ready Scripture Intelligence server for public-domain WEB/KJV/ASV Bible search, verse lookup, theology, sermon preparation, devotionals, and original-language study.',
   marketplaceUrl: 'https://mcpize.com/mcp/scripture-intelligence-server',
   gatewayUrl: 'https://scripture-intelligence-server.mcpize.run',
   primaryAudience: [
@@ -433,6 +433,8 @@ const discoveryMetadata = {
     'AI Bible study tool',
     'Christian theology MCP server',
     'Bible verse lookup MCP',
+    'public domain Bible MCP',
+    'WEB KJV ASV Bible text MCP',
     'Bible cross reference API',
     'sermon preparation AI tool',
     'Hebrew Greek Bible word study MCP',
@@ -502,16 +504,18 @@ export function buildResourcePayload(
   if (uri === 'scripture://bible/translations') {
     payload = {
       uri,
+      defaultTranslation: 'WEB',
+      note: 'Full-text setup imports public-domain WEB, KJV, and ASV by default. Copyrighted modern translations are metadata-only unless licensed text is loaded.',
       translations: [
-        { id: 'KJV', name: 'King James Version', publicDomain: true },
-        { id: 'WEB', name: 'World English Bible', publicDomain: true },
-        { id: 'ASV', name: 'American Standard Version', publicDomain: true },
-        { id: 'ESV', name: 'English Standard Version', publicDomain: false },
-        { id: 'NIV', name: 'New International Version', publicDomain: false },
-        { id: 'NKJV', name: 'New King James Version', publicDomain: false },
-        { id: 'NLT', name: 'New Living Translation', publicDomain: false },
-        { id: 'CSB', name: 'Christian Standard Bible', publicDomain: false },
-        { id: 'NASB', name: 'New American Standard Bible', publicDomain: false },
+        { id: 'WEB', name: 'World English Bible', publicDomain: true, bundledBySetup: true },
+        { id: 'KJV', name: 'King James Version', publicDomain: true, bundledBySetup: true },
+        { id: 'ASV', name: 'American Standard Version', publicDomain: true, bundledBySetup: true },
+        { id: 'ESV', name: 'English Standard Version', publicDomain: false, bundledBySetup: false },
+        { id: 'NIV', name: 'New International Version', publicDomain: false, bundledBySetup: false },
+        { id: 'NKJV', name: 'New King James Version', publicDomain: false, bundledBySetup: false },
+        { id: 'NLT', name: 'New Living Translation', publicDomain: false, bundledBySetup: false },
+        { id: 'CSB', name: 'Christian Standard Bible', publicDomain: false, bundledBySetup: false },
+        { id: 'NASB', name: 'New American Standard Bible', publicDomain: false, bundledBySetup: false },
       ],
     };
   } else if (uri === 'scripture://bible/books') {
@@ -589,7 +593,7 @@ export function buildResourcePayload(
   } else if (uri === 'scripture://server/status') {
     payload = { uri, status: 'ok', timestamp: new Date().toISOString() };
   } else if (uri === 'scripture://server/copyright') {
-    payload = `${name}\n\nThis server should prefer public-domain Bible text for long quotations and respect licensing terms for modern translations such as ESV, NIV, NKJV, NLT, CSB, and NASB. Keep quotation output proportionate, attribute translation names, and summarize rather than reproducing large copyrighted passages.`;
+    payload = `${name}\n\nThis server imports public-domain WEB, KJV, and ASV text from eBible USFM archives during setup. It should prefer public-domain Bible text for long quotations and respect licensing terms for modern translations such as ESV, NIV, NKJV, NLT, CSB, and NASB. Keep quotation output proportionate, attribute translation names, and summarize rather than reproducing large copyrighted passages.`;
   } else if (uri === 'scripture://server/disclaimer') {
     payload = `${name}\n\nThis server supports Bible study, teaching preparation, devotional reflection, and theological research. It should not be treated as a replacement for pastoral care, emergency help, medical care, legal advice, licensed counseling, or responsible scholarship. Interpretive output should distinguish clear biblical claims from debated theological judgments.`;
   } else if (uri === 'scripture://server/terms') {

@@ -23,6 +23,7 @@ import {
   SCRIPTURE_TOOL_SPECS,
 } from './catalog.js';
 import { BibleDatabase } from '../database/bible-data.js';
+import { PUBLIC_DOMAIN_TRANSLATIONS } from '../database/public-domain-importer.js';
 import { QueryProcessor } from '../nlp/query-processor.js';
 import { CrossReferenceEngine } from '../intelligence/cross-reference-engine.js';
 import { ContextAnalyzer } from '../intelligence/context-analyzer.js';
@@ -43,7 +44,7 @@ import {
 } from '../security/input-guard.js';
 import { BibleVerse, ScriptureIntelligenceConfig } from '../types/index.js';
 
-const SERVER_VERSION = '1.0.0';
+const SERVER_VERSION = '1.1.0';
 
 export class ScriptureIntelligenceServer {
   private server: Server;
@@ -73,7 +74,7 @@ export class ScriptureIntelligenceServer {
       }
     );
 
-    this.db = new BibleDatabase(config.databasePath);
+    this.db = new BibleDatabase(config.databasePath, config.defaultTranslation);
     this.queryProcessor = new QueryProcessor();
     this.crossRefEngine = new CrossReferenceEngine(this.db);
     this.contextAnalyzer = new ContextAnalyzer(this.db);
@@ -104,6 +105,11 @@ export class ScriptureIntelligenceServer {
                 description: 'Maximum number of results to return',
                 default: 20,
               },
+              translation: {
+                type: 'string',
+                description: 'Preferred loaded Bible translation such as WEB, KJV, ASV, or ESV',
+                default: this.config.defaultTranslation,
+              },
             },
             required: ['query'],
           },
@@ -126,6 +132,11 @@ export class ScriptureIntelligenceServer {
                 type: 'number',
                 description: 'Verse number',
               },
+              translation: {
+                type: 'string',
+                description: 'Preferred loaded Bible translation such as WEB, KJV, ASV, or ESV',
+                default: this.config.defaultTranslation,
+              },
             },
             required: ['book', 'chapter', 'verse'],
           },
@@ -147,6 +158,11 @@ export class ScriptureIntelligenceServer {
               verse: {
                 type: 'number',
                 description: 'Verse number',
+              },
+              translation: {
+                type: 'string',
+                description: 'Preferred loaded Bible translation such as WEB, KJV, ASV, or ESV',
+                default: this.config.defaultTranslation,
               },
             },
             required: ['book', 'chapter', 'verse'],
@@ -213,6 +229,10 @@ export class ScriptureIntelligenceServer {
               reference: {
                 type: 'string',
                 description: 'Verse reference (e.g., "John 3:16", "Psalm 23:1")',
+              },
+              translations: {
+                type: 'string',
+                description: 'Optional comma-separated translation list. Loaded public-domain texts include WEB, KJV, and ASV after database setup.',
               },
             },
             required: ['reference'],
@@ -360,22 +380,102 @@ export class ScriptureIntelligenceServer {
   }
 
   private async buildDynamicResourcePayload(uri: string): Promise<{ mimeType: string; text: string } | null> {
-    const bibleMatch = uri.match(/^scripture:\/\/bible\/([^/]+)\/([^/]+)\/(\d+)(?:\/(\d+)(?:-(\d+))?)?$/);
-    if (bibleMatch) {
-      const [, translation, book, chapterValue, verseValue, endVerseValue] = bibleMatch;
-      const chapter = clampPositiveInteger(chapterValue, 1, 150);
-      const range = endVerseValue ? clampVerseRange(Number(verseValue), Number(endVerseValue)) : undefined;
-      const verses = verseValue
-        ? endVerseValue
-          ? await this.db.getPassage(book, chapter, range!.startVerse, range!.endVerse)
-          : await this.getVersesForReference({ book, chapter, verse: clampPositiveInteger(verseValue, 1, 200) })
-        : await this.db.getChapter(book, chapter);
+    if (uri === 'scripture://bible/translations') {
+      const loadedTranslations = await this.db.getAvailableTranslations();
+      const loadedById = new Map(loadedTranslations.map((translation) => [translation.translation, translation.verses]));
+      const publicDomainSources = PUBLIC_DOMAIN_TRANSLATIONS.map((source) => ({
+        id: source.id,
+        name: source.name,
+        publicDomain: true,
+        loaded: loadedById.has(source.id),
+        verses: loadedById.get(source.id) || 0,
+        sourceUrl: source.sourceUrl,
+        detailUrl: source.detailUrl,
+        copyright: source.copyright,
+      }));
 
       return {
         mimeType: 'application/json',
         text: safeJson(attachStudySafety({
           uri,
+          defaultTranslation: this.config.defaultTranslation,
+          publicDomainSources,
+          licensedTranslations: [
+            { id: 'ESV', name: 'English Standard Version', loaded: loadedById.has('ESV'), publicDomain: false },
+            { id: 'NIV', name: 'New International Version', loaded: loadedById.has('NIV'), publicDomain: false },
+            { id: 'NKJV', name: 'New King James Version', loaded: loadedById.has('NKJV'), publicDomain: false },
+            { id: 'NLT', name: 'New Living Translation', loaded: loadedById.has('NLT'), publicDomain: false },
+            { id: 'CSB', name: 'Christian Standard Bible', loaded: loadedById.has('CSB'), publicDomain: false },
+            { id: 'NASB', name: 'New American Standard Bible', loaded: loadedById.has('NASB'), publicDomain: false },
+          ],
+          note: 'Full-text setup imports public-domain WEB, KJV, and ASV by default. Copyrighted modern translations are not bundled unless a licensed dataset is explicitly loaded.',
+        })),
+      };
+    }
+
+    const publicDomainResourceMatch = uri.match(/^scripture:\/\/bible\/public-domain\/([^/]+)$/);
+    if (publicDomainResourceMatch) {
+      const translation = sanitizeText(publicDomainResourceMatch[1], 16).toUpperCase();
+      const source = PUBLIC_DOMAIN_TRANSLATIONS.find((candidate) => candidate.id === translation);
+      if (source) {
+        const verses = await this.db.countVersesForTranslation(source.id);
+        return {
+          mimeType: 'application/json',
+          text: safeJson(attachStudySafety({
+            uri,
+            ...source,
+            loaded: verses >= 30000,
+            verses,
+          })),
+        };
+      }
+    }
+
+    const publicDomainStatusMatch = uri.match(/^scripture:\/\/public-domain\/status\/([^/]+)$/);
+    const translationMetadataMatch = uri.match(/^scripture:\/\/translation\/metadata\/([^/]+)$/);
+    if (publicDomainStatusMatch || translationMetadataMatch) {
+      const translation = sanitizeText((publicDomainStatusMatch || translationMetadataMatch)![1], 16).toUpperCase();
+      const source = PUBLIC_DOMAIN_TRANSLATIONS.find((candidate) => candidate.id === translation);
+      const verses = await this.db.countVersesForTranslation(translation);
+      return {
+        mimeType: 'application/json',
+        text: safeJson(attachStudySafety({
+          uri,
           translation,
+          publicDomain: Boolean(source),
+          loaded: verses > 0,
+          verses,
+          metadata: source || {
+            id: translation,
+            copyright: 'Not bundled by default. Load only with proper licensing and attribution.',
+          },
+        })),
+      };
+    }
+
+    const bibleMatch = uri.match(/^scripture:\/\/bible\/([^/]+)\/([^/]+)\/(\d+)(?:\/(\d+)(?:-(\d+))?)?$/);
+    if (bibleMatch) {
+      const [, translation, book, chapterValue, verseValue, endVerseValue] = bibleMatch;
+      const chapter = clampPositiveInteger(chapterValue, 1, 150);
+      const range = endVerseValue ? clampVerseRange(Number(verseValue), Number(endVerseValue)) : undefined;
+      const requestedTranslation = sanitizeText(translation, 16).toUpperCase();
+      const verses = verseValue
+        ? endVerseValue
+          ? await this.db.getPassage(book, chapter, range!.startVerse, range!.endVerse, requestedTranslation, { fallback: false })
+          : await this.getVersesForReference({
+              book,
+              chapter,
+              verse: clampPositiveInteger(verseValue, 1, 200),
+              translation: requestedTranslation,
+              strictTranslation: true,
+            })
+        : await this.db.getChapter(book, chapter, requestedTranslation, { fallback: false });
+
+      return {
+        mimeType: 'application/json',
+        text: safeJson(attachStudySafety({
+          uri,
+          translation: requestedTranslation,
           reference: verseValue
             ? endVerseValue
               ? `${book} ${chapter}:${verseValue}-${endVerseValue}`
@@ -484,13 +584,14 @@ export class ScriptureIntelligenceServer {
   private async handleSearchScripture(args: any) {
     const query = this.requireText(args.query, 'query');
     const limit = clampPositiveInteger(args.limit, 20);
+    const translation = this.getRequestedTranslation(args);
     const processedQuery = this.queryProcessor.processQuery(query);
     
     let verses;
     if (processedQuery.entities.books && processedQuery.entities.books.length > 0) {
-      verses = await this.db.searchVerses(query, processedQuery.entities.books, limit);
+      verses = await this.db.searchVerses(query, processedQuery.entities.books, limit, translation, { fallback: !args.translation });
     } else {
-      verses = await this.db.searchVerses(query, undefined, limit);
+      verses = await this.db.searchVerses(query, undefined, limit, translation, { fallback: !args.translation });
     }
 
     const results = verses.map(verse => ({
@@ -506,6 +607,7 @@ export class ScriptureIntelligenceServer {
           type: 'text',
           text: JSON.stringify({
             query,
+            translation,
             intent: processedQuery.intent,
             entities: processedQuery.entities,
             results: results.sort((a, b) => b.relevance - a.relevance),
@@ -517,8 +619,8 @@ export class ScriptureIntelligenceServer {
   }
 
   private async handleGetVerseAnalysis(args: any) {
-    const { book, chapter, verse } = this.requireVerseReference(args);
-    const bibleVerse = await this.db.getVerse(book, chapter, verse);
+    const { book, chapter, verse, translation } = this.requireVerseReference(args);
+    const bibleVerse = await this.db.getVerse(book, chapter, verse, translation, { fallback: !args.translation });
     
     if (!bibleVerse) {
       throw new Error('Verse not found');
@@ -545,8 +647,8 @@ export class ScriptureIntelligenceServer {
   }
 
   private async handleFindCrossReferences(args: any) {
-    const { book, chapter, verse } = this.requireVerseReference(args);
-    const bibleVerse = await this.db.getVerse(book, chapter, verse);
+    const { book, chapter, verse, translation } = this.requireVerseReference(args);
+    const bibleVerse = await this.db.getVerse(book, chapter, verse, translation, { fallback: !args.translation });
     
     if (!bibleVerse) {
       throw new Error('Verse not found');
@@ -627,7 +729,11 @@ export class ScriptureIntelligenceServer {
 
   private async handleCompareTranslations(args: any) {
     const reference = this.requireText(args.reference || args.query, 'reference');
-    const comparison = await this.originalLanguages.compareTranslations(reference);
+    const translations = sanitizeText(args.translations || args.translation || '', 120)
+      .split(',')
+      .map((translation) => translation.trim().toUpperCase())
+      .filter(Boolean);
+    const comparison = await this.originalLanguages.compareTranslations(reference, translations);
 
     return {
       content: [
@@ -739,6 +845,7 @@ export class ScriptureIntelligenceServer {
       case 'translation_compare':
         return await this.handleCompareTranslations({
           reference: this.getReferenceInput(args),
+          translations: args.translations || args.translation,
         });
       case 'original_language_lookup':
       case 'hebrew_word_study':
@@ -761,6 +868,7 @@ export class ScriptureIntelligenceServer {
 
   private async handleVerseLookupTool(args: any) {
     const reference = this.parseReferenceInput(args);
+    const translation = this.getRequestedTranslation(args);
     if (!reference.book || !reference.chapter) {
       return this.createToolResponse({
         tool: 'verse_lookup',
@@ -769,11 +877,12 @@ export class ScriptureIntelligenceServer {
       });
     }
 
-    const verses = await this.getVersesForReference(reference);
+    const verses = await this.getVersesForReference({ ...reference, translation, strictTranslation: Boolean(args.translation) });
 
     return this.createToolResponse({
       tool: 'verse_lookup',
       reference: this.formatReference(reference),
+      translation,
       verses,
       count: verses.length,
       note: verses.length === 0 ? 'No matching verses were found in the local Scripture database.' : undefined,
@@ -782,12 +891,16 @@ export class ScriptureIntelligenceServer {
 
   private async handlePassageAnalysisTool(name: string, args: any) {
     const reference = this.parseReferenceInput(args);
-    const verses = reference.book && reference.chapter ? await this.getVersesForReference(reference) : [];
+    const translation = this.getRequestedTranslation(args);
+    const verses = reference.book && reference.chapter
+      ? await this.getVersesForReference({ ...reference, translation, strictTranslation: Boolean(args.translation) })
+      : [];
     const passageText = verses.map((verse) => verse.text).join(' ');
 
     return this.createToolResponse({
       tool: name,
       reference: reference.book ? this.formatReference(reference) : this.getReferenceInput(args),
+      translation,
       passage: verses,
       structure: this.describePassageStructure(verses),
       keyIdeas: this.extractKeyIdeas(passageText || this.getPrimaryInput(args)),
@@ -799,6 +912,7 @@ export class ScriptureIntelligenceServer {
 
   private async handleChapterSummaryTool(args: any) {
     const reference = this.parseReferenceInput(args);
+    const translation = this.getRequestedTranslation(args);
     if (!reference.book || !reference.chapter) {
       return this.createToolResponse({
         tool: 'chapter_summary',
@@ -807,12 +921,13 @@ export class ScriptureIntelligenceServer {
       });
     }
 
-    const verses = await this.db.getChapter(reference.book, reference.chapter);
+    const verses = await this.db.getChapter(reference.book, reference.chapter, translation, { fallback: !args.translation });
     const text = verses.map((verse) => verse.text).join(' ');
 
     return this.createToolResponse({
       tool: 'chapter_summary',
       reference: `${reference.book} ${reference.chapter}`,
+      translation,
       verseCount: verses.length,
       keyEvents: this.extractKeyIdeas(text),
       themes: this.inferThemes(text || reference.book),
@@ -843,6 +958,7 @@ export class ScriptureIntelligenceServer {
 
   private async handleParallelPassagesTool(args: any) {
     const reference = this.parseReferenceInput(args);
+    const translation = this.getRequestedTranslation(args);
     if (!reference.book || !reference.chapter || !reference.verse) {
       return this.createToolResponse({
         tool: 'find_parallel_passages',
@@ -851,7 +967,7 @@ export class ScriptureIntelligenceServer {
       });
     }
 
-    const verse = await this.db.getVerse(reference.book, reference.chapter, reference.verse);
+    const verse = await this.db.getVerse(reference.book, reference.chapter, reference.verse, translation, { fallback: !args.translation });
     if (!verse) {
       return this.createToolResponse({
         tool: 'find_parallel_passages',
@@ -865,6 +981,7 @@ export class ScriptureIntelligenceServer {
     return this.createToolResponse({
       tool: 'find_parallel_passages',
       reference: this.formatReference(reference),
+      translation,
       parallelPassages,
       count: parallelPassages.length,
     });
@@ -873,11 +990,13 @@ export class ScriptureIntelligenceServer {
   private async handleSearchBackedTool(name: string, args: any) {
     const query = this.getPrimaryInput(args);
     const limit = clampPositiveInteger(args.limit, 10);
-    const verses = query ? await this.db.searchVerses(query, undefined, limit) : [];
+    const translation = this.getRequestedTranslation(args);
+    const verses = query ? await this.db.searchVerses(query, undefined, limit, translation, { fallback: !args.translation }) : [];
 
     return this.createToolResponse({
       tool: name,
       query,
+      translation,
       results: verses.map((verse) => ({
         reference: `${verse.book} ${verse.chapter}:${verse.verse}`,
         text: verse.text,
@@ -901,7 +1020,10 @@ export class ScriptureIntelligenceServer {
     const reference = this.parseReferenceInput(args);
     const subject = this.getPrimaryInput(args) || 'requested Scripture passage';
     const audience = sanitizeText(args.audience || 'general audience', 160);
-    const verses = reference.book && reference.chapter ? await this.getVersesForReference(reference) : [];
+    const translation = this.getRequestedTranslation(args);
+    const verses = reference.book && reference.chapter
+      ? await this.getVersesForReference({ ...reference, translation, strictTranslation: Boolean(args.translation) })
+      : [];
     const passageText = verses.map((verse) => verse.text).join(' ');
     const keyIdeas = this.extractKeyIdeas(passageText || subject);
     const referenceLabel = reference.book ? this.formatReference(reference) : subject;
@@ -909,6 +1031,7 @@ export class ScriptureIntelligenceServer {
     return this.createToolResponse({
       tool: 'sermon_outline_generator',
       reference: referenceLabel,
+      translation,
       audience,
       passage: verses.map((verse) => ({
         reference: `${verse.book} ${verse.chapter}:${verse.verse}`,
@@ -999,23 +1122,27 @@ export class ScriptureIntelligenceServer {
     verse?: number;
     startVerse?: number;
     endVerse?: number;
+    translation?: string;
+    strictTranslation?: boolean;
   }): Promise<BibleVerse[]> {
     if (!reference.book || !reference.chapter) return [];
+    const translation = this.getRequestedTranslation(reference);
+    const lookupOptions = { fallback: !reference.strictTranslation };
 
     if (reference.startVerse && reference.endVerse) {
       const range = clampVerseRange(reference.startVerse, reference.endVerse);
-      return await this.db.getPassage(reference.book, reference.chapter, range.startVerse, range.endVerse);
+      return await this.db.getPassage(reference.book, reference.chapter, range.startVerse, range.endVerse, translation, lookupOptions);
     }
 
     if (reference.verse) {
-      const verse = await this.db.getVerse(reference.book, reference.chapter, reference.verse);
+      const verse = await this.db.getVerse(reference.book, reference.chapter, reference.verse, translation, lookupOptions);
       return verse ? [verse] : [];
     }
 
-    return await this.db.getChapter(reference.book, reference.chapter);
+    return await this.db.getChapter(reference.book, reference.chapter, translation, lookupOptions);
   }
 
-  private requireVerseReference(args: any): { book: string; chapter: number; verse: number } {
+  private requireVerseReference(args: any): { book: string; chapter: number; verse: number; translation: string } {
     const reference = this.parseReferenceInput(args);
     if (!reference.book || !reference.chapter || !reference.verse) {
       throw new UserInputError('A specific verse reference is required.');
@@ -1025,6 +1152,7 @@ export class ScriptureIntelligenceServer {
       book: reference.book,
       chapter: reference.chapter,
       verse: reference.verse,
+      translation: this.getRequestedTranslation(args),
     };
   }
 
@@ -1086,6 +1214,10 @@ export class ScriptureIntelligenceServer {
 
   private getReferenceInput(args: any): string {
     return sanitizeText(args.reference || args.verse || args.query || args.topic || '', 256);
+  }
+
+  private getRequestedTranslation(args: any): string {
+    return sanitizeText(args.translation || this.config.defaultTranslation, 16).toUpperCase();
   }
 
   private getPrimaryInput(args: any): string {
@@ -1268,7 +1400,7 @@ function readNumberEnv(name: string, fallback: number): number {
 export function createConfigFromEnv(): ScriptureIntelligenceConfig {
   return {
     databasePath: process.env.SCRIPTURE_DB_PATH || './scripture_intelligence.db',
-    defaultTranslation: sanitizeText(process.env.DEFAULT_TRANSLATION || 'ESV', 16).toUpperCase(),
+    defaultTranslation: sanitizeText(process.env.DEFAULT_TRANSLATION || 'WEB', 16).toUpperCase(),
     enableOriginalLanguages: readBooleanEnv('ENABLE_ORIGINAL_LANGUAGES', true),
     enableHistoricalContext: readBooleanEnv('ENABLE_HISTORICAL_CONTEXT', true),
     enableTheologicalAnalysis: readBooleanEnv('ENABLE_THEOLOGICAL_ANALYSIS', true),

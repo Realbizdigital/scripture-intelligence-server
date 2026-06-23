@@ -11,11 +11,13 @@
   "operatingSystem": "MCP-compatible clients",
   "url": "https://mcpize.com/mcp/scripture-intelligence-server",
   "downloadUrl": "https://scripture-intelligence-server.mcpize.run",
-  "description": "Barzel Scripture Intelligence is a Bible MCP server for Scripture search, verse lookup, Christian theology, sermon preparation, cross-references, Hebrew and Greek word studies, devotionals, apologetics, and AI-assisted Bible study.",
+  "description": "Barzel Scripture Intelligence is a Bible MCP server for public-domain WEB, KJV, and ASV Scripture search, verse lookup, Christian theology, sermon preparation, cross-references, Hebrew and Greek word studies, devotionals, apologetics, and AI-assisted Bible study.",
   "keywords": [
     "Bible MCP server",
     "Scripture Intelligence MCP",
     "AI Bible study tool",
+    "public domain Bible MCP",
+    "WEB KJV ASV Bible text MCP",
     "Christian theology MCP server",
     "Bible verse lookup MCP",
     "Bible cross reference API",
@@ -26,7 +28,7 @@
   ],
   "featureList": [
     "Natural language Scripture search",
-    "Bible verse lookup",
+    "Public-domain WEB, KJV, and ASV Bible verse lookup",
     "Passage analysis",
     "Cross-reference discovery",
     "Christian doctrine research",

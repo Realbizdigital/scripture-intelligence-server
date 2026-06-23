@@ -107,7 +107,7 @@ export class OriginalLanguagesProcessor {
     };
   }
 
-  async compareTranslations(verseReference: string): Promise<{
+  async compareTranslations(verseReference: string, requestedTranslations?: string[]): Promise<{
     reference: string;
     translations: Array<{
       name: string;
@@ -125,42 +125,74 @@ export class OriginalLanguagesProcessor {
       throw new Error('Invalid verse reference');
     }
 
-    // This would ideally query multiple translation databases
-    // For now, we'll simulate with common translations
-    const translations = [
+    const translationCatalog = [
+      {
+        name: 'WEB',
+        characteristics: 'Public-domain modern English translation designed for open redistribution and broad readability',
+        originalLanguageInsights: ['Balances formal accuracy with public-domain accessibility', 'Useful as the default full-text comparison base']
+      },
+      {
+        name: 'KJV',
+        characteristics: 'Formal equivalence translation using traditional English, deeply influential in English-speaking Christianity',
+        originalLanguageInsights: ['Preserves many traditional renderings', 'Uses early modern English forms and sentence structure']
+      },
+      {
+        name: 'ASV',
+        characteristics: 'Public-domain formal translation from 1901 with close attention to source-language wording',
+        originalLanguageInsights: ['Often preserves literal constructions', 'Useful for comparing older formal English renderings']
+      },
       {
         name: 'ESV',
-        text: await this.getTranslationText(book, chapter, verse, 'ESV'),
-        available: false,
         characteristics: 'Essentially literal translation, emphasizing word-for-word accuracy while maintaining readability',
         originalLanguageInsights: ['Maintains Hebrew/Greek word order', 'Emphasizes theological precision']
       },
       {
         name: 'NIV',
-        text: await this.getTranslationText(book, chapter, verse, 'NIV'),
-        available: false,
         characteristics: 'Dynamic equivalence translation, balancing accuracy with contemporary readability',
         originalLanguageInsights: ['Focuses on meaning over form', 'Uses contemporary idioms']
       },
       {
-        name: 'KJV',
-        text: await this.getTranslationText(book, chapter, verse, 'KJV'),
-        available: false,
-        characteristics: 'Formal equivalence translation using traditional language, influential in English-speaking Christianity',
-        originalLanguageInsights: ['Preserves traditional renderings', 'Uses formal language structure']
-      }
-    ].map((translation) => ({
+        name: 'NKJV',
+        characteristics: 'Modernized revision in the King James tradition, under copyright',
+        originalLanguageInsights: ['Keeps many traditional renderings', 'Modernizes archaic wording']
+      },
+      {
+        name: 'NLT',
+        characteristics: 'Dynamic translation emphasizing contemporary clarity, under copyright',
+        originalLanguageInsights: ['Often renders thought-for-thought', 'Prioritizes readability']
+      },
+      {
+        name: 'CSB',
+        characteristics: 'Modern translation using an optimal-equivalence approach, under copyright',
+        originalLanguageInsights: ['Balances formal and functional translation choices', 'Aims for readability with textual precision']
+      },
+      {
+        name: 'NASB',
+        characteristics: 'Formal translation known for close source-language correspondence, under copyright',
+        originalLanguageInsights: ['Often preserves source-language structure', 'Useful for detailed wording comparison when licensed text is loaded']
+      },
+    ];
+
+    const selected = new Set((requestedTranslations || []).map((translation) => translation.toUpperCase()));
+    const translations = await Promise.all(translationCatalog
+      .filter((translation) => selected.size === 0 || selected.has(translation.name))
+      .map(async (translation) => ({
+      ...translation,
+      text: await this.getTranslationText(book, chapter, verse, translation.name),
+    })));
+
+    const translationsWithAvailability = translations.map((translation) => ({
       ...translation,
       available: Boolean(translation.text),
       note: translation.text ? undefined : 'This translation text is not loaded in the local database. Add a licensed or public-domain translation dataset to compare wording directly.',
     }));
 
-    const keyDifferences = this.identifyTranslationDifferences(translations);
+    const keyDifferences = this.identifyTranslationDifferences(translationsWithAvailability);
     const theologicalImplications = this.analyzeTheologicalImplications(keyDifferences);
 
     return {
       reference: verseReference,
-      translations,
+      translations: translationsWithAvailability,
       keyDifferences,
       theologicalImplications
     };
@@ -454,7 +486,7 @@ export class OriginalLanguagesProcessor {
   }
 
   private async getTranslationText(book: string, chapter: number, verse: number, translation: string): Promise<string | undefined> {
-    const localVerse = await this.db.getVerse(book, chapter, verse);
+    const localVerse = await this.db.getVerse(book, chapter, verse, translation, { fallback: false });
     if (localVerse?.translation.toUpperCase() === translation.toUpperCase()) {
       return localVerse.text;
     }

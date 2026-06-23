@@ -97,7 +97,7 @@ export class QueryProcessor {
         entities.books!.push(bookAbbreviations[token as keyof typeof bookAbbreviations]);
       }
       // Check for numbered books (e.g., "1 john", "2 corinthians")
-      else if (/^[1-3]$/.test(token) && nextToken && bibleBooks.includes(nextToken)) {
+      else if (/^[1-3]$/.test(token) && nextToken && bibleBooks.includes(`${token} ${nextToken}`)) {
         entities.books!.push(`${token} ${nextToken}`);
         i++; // Skip next token since we've processed it
       }

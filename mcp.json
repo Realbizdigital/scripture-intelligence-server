@@ -1,7 +1,7 @@
 {
   "name": "Barzel Scripture Intelligence",
-  "version": "1.0.0",
-  "description": "Barzel Scripture Intelligence is an advanced Bible MCP server for Scripture search, verse lookup, Christian theology, sermon preparation, cross-references, original-language Hebrew and Greek word studies, devotionals, apologetics, and AI-assisted Bible study.",
+  "version": "1.1.0",
+  "description": "Barzel Scripture Intelligence is an advanced Bible MCP server for public-domain WEB, KJV, and ASV Scripture search, verse lookup, Christian theology, sermon preparation, cross-references, original-language Hebrew and Greek word studies, devotionals, apologetics, and AI-assisted Bible study.",
   "author": "Scripture Intelligence Team",
   "license": "MIT",
   "homepage": "https://github.com/Realbizdigital/scripture-intelligence-server",
@@ -43,7 +43,7 @@
   ],
   "seo": {
     "title": "Barzel Scripture Intelligence - Bible MCP Server for AI Scripture Study",
-    "summary": "Discover and connect a Scripture Intelligence MCP server for natural language Bible search, verse lookup, Bible passage analysis, Christian theology, sermon preparation, cross-references, Hebrew and Greek word studies, devotionals, apologetics, and teaching workflows.",
+    "summary": "Discover and connect a Scripture Intelligence MCP server for public-domain WEB, KJV, and ASV Bible search, verse lookup, Bible passage analysis, Christian theology, sermon preparation, cross-references, Hebrew and Greek word studies, devotionals, apologetics, and teaching workflows.",
     "audience": [
       "AI tools and MCP clients",
       "Bible study apps",
@@ -57,6 +57,8 @@
       "Bible MCP server",
       "Scripture Intelligence MCP",
       "AI Bible study tool",
+      "public domain Bible MCP",
+      "WEB KJV ASV Bible text MCP",
       "Christian theology MCP server",
       "Bible verse lookup MCP",
       "sermon preparation AI tool",
@@ -179,7 +181,7 @@
     "requirements": {
       "node": ">=18.0.0",
       "memory": "512MB",
-      "storage": "100MB"
+      "storage": "256MB"
     },
     "configuration": {
       "databasePath": {
@@ -189,9 +191,14 @@
       },
       "defaultTranslation": {
         "type": "string",
-        "default": "ESV",
-        "enum": ["ESV", "NIV", "KJV", "NASB"],
-        "description": "Default Bible translation"
+        "default": "WEB",
+        "enum": ["WEB", "KJV", "ASV", "ESV", "NIV", "NASB"],
+        "description": "Default Bible translation. Public-domain full text is imported for WEB, KJV, and ASV by default."
+      },
+      "importPublicDomainTranslations": {
+        "type": "boolean",
+        "default": true,
+        "description": "Import public-domain WEB, KJV, and ASV text during database setup."
       },
       "enableOriginalLanguages": {
         "type": "boolean",
@@ -243,13 +250,14 @@
       ]
     },
     "data_sources": {
-      "bible_translations": ["ESV", "NIV", "KJV", "NASB"],
+      "public_domain_bible_text": ["WEB", "KJV", "ASV"],
+      "licensed_translation_metadata": ["ESV", "NIV", "NKJV", "NLT", "CSB", "NASB"],
       "original_languages": {
-        "hebrew": "Strong's Hebrew Dictionary",
-        "greek": "Strong's Greek Dictionary"
+        "hebrew": "Curated Hebrew starter lexicon and Strong's examples",
+        "greek": "Curated Greek starter lexicon and Strong's examples"
       },
-      "cross_references": "Comprehensive cross-reference database",
-      "historical_data": "Biblical historical and cultural context",
+      "cross_references": "Curated starter cross-references plus dynamic Scripture search",
+      "historical_data": "Biblical historical and cultural context seed records",
       "theological_themes": "Systematic theology framework"
     },
     "theological_perspective": {
@@ -264,6 +272,13 @@
       "discussions": "https://github.com/Realbizdigital/scripture-intelligence-server/discussions"
     },
     "changelog": {
+      "1.1.0": [
+        "Public-domain WEB, KJV, and ASV corpus importer",
+        "Translation-aware database lookups and MCP resources",
+        "Strict translation comparison without fabricated copyrighted text",
+        "Book-name alias normalization",
+        "Customer-readiness tests for corpus parsing and translation behavior"
+      ],
       "1.0.0": [
         "Initial release",
         "Natural language Bible search",

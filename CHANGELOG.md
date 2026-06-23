@@ -5,6 +5,20 @@ All notable changes to Scripture Intelligence Server will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-06-23
+
+### Added
+- Public-domain Bible corpus importer for WEB, KJV, and ASV using eBible USFM archives.
+- Translation-aware SQLite reads for verse, passage, chapter, search, resource, and comparison workflows.
+- Book-name normalization for common abbreviations and aliases such as Psalm/Psalms, Jn, and 1 Cor.
+- MCP translation metadata resources that report loaded public-domain text and licensing notes.
+- Tests for strict translation lookup, book aliases, and USFM archive parsing.
+
+### Changed
+- Default full-text translation is now WEB to keep production output public-domain by default.
+- Translation comparison now uses loaded text only and no longer implies bundled copyrighted modern translations.
+- Setup no longer exits after sample seed data; it proceeds to public-domain corpus import unless disabled.
+
 ## [1.0.0] - 2024-01-15
 
 ### Added

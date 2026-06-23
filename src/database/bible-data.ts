@@ -7,14 +7,21 @@ import {
   SAMPLE_THEOLOGICAL_THEMES,
   SAMPLE_VERSES,
 } from './sample-data.js';
+import { getBookNameCandidates } from './book-names.js';
+
+type TranslationLookupOptions = {
+  fallback?: boolean;
+};
 
 export class BibleDatabase {
   private db: sqlite3.Database;
   private readonly maxSearchLimit = 50;
   private readonly maxPassageVerses = 200;
+  private readonly defaultTranslation: string;
 
-  constructor(dbPath: string) {
+  constructor(dbPath: string, defaultTranslation = 'WEB') {
     this.db = new sqlite3.Database(dbPath);
+    this.defaultTranslation = this.normalizeTranslation(defaultTranslation);
   }
 
   async initialize(): Promise<void> {
@@ -105,6 +112,8 @@ export class BibleDatabase {
         `);
 
         this.db.run('CREATE INDEX IF NOT EXISTS idx_verses_reference ON verses(book, chapter, verse)');
+        this.db.run('CREATE INDEX IF NOT EXISTS idx_verses_reference_translation ON verses(book, chapter, verse, translation)');
+        this.db.run('CREATE INDEX IF NOT EXISTS idx_verses_translation_reference ON verses(translation, book, chapter, verse)');
         this.db.run('CREATE INDEX IF NOT EXISTS idx_verses_text ON verses(text)');
         this.db.run('CREATE INDEX IF NOT EXISTS idx_cross_references_source ON cross_references(source_book, source_chapter, source_verse)');
         this.db.run('CREATE INDEX IF NOT EXISTS idx_historical_context_lookup ON historical_context(book, chapter_start, chapter_end)');
@@ -130,7 +139,7 @@ export class BibleDatabase {
         verse.chapter,
         verse.verse,
         verse.text,
-        verse.translation,
+        this.normalizeTranslation(verse.translation),
         verse.originalHebrew || null,
         verse.originalGreek || null,
         verse.strongNumbers ? verse.strongNumbers.join(',') : null
@@ -140,6 +149,94 @@ export class BibleDatabase {
       });
       
       stmt.finalize();
+    });
+  }
+
+  async addVersesBulk(verses: BibleVerse[]): Promise<void> {
+    if (verses.length === 0) return;
+
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const finishWithError = (error: Error) => {
+        if (settled) return;
+        settled = true;
+        this.db.run('ROLLBACK', () => reject(error));
+      };
+
+      this.db.serialize(() => {
+        this.db.run('BEGIN TRANSACTION');
+        const stmt = this.db.prepare(`
+          INSERT OR REPLACE INTO verses
+          (book, chapter, verse, text, translation, original_hebrew, original_greek, strong_numbers)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+
+        for (const verse of verses) {
+          stmt.run([
+            verse.book,
+            verse.chapter,
+            verse.verse,
+            verse.text,
+            this.normalizeTranslation(verse.translation),
+            verse.originalHebrew || null,
+            verse.originalGreek || null,
+            verse.strongNumbers ? verse.strongNumbers.join(',') : null,
+          ], (err) => {
+            if (err) finishWithError(err);
+          });
+        }
+
+        stmt.finalize((finalizeError) => {
+          if (finalizeError) {
+            finishWithError(finalizeError);
+            return;
+          }
+
+          this.db.run('COMMIT', (commitError) => {
+            if (commitError) {
+              finishWithError(commitError);
+            } else if (!settled) {
+              settled = true;
+              resolve();
+            }
+          });
+        });
+      });
+    });
+  }
+
+  async countVersesForTranslation(translation: string): Promise<number> {
+    return new Promise((resolve, reject) => {
+      this.db.get(
+        'SELECT COUNT(*) AS count FROM verses WHERE translation = ?',
+        [this.normalizeTranslation(translation)],
+        (err, row: any) => {
+          if (err) reject(err);
+          else resolve(Number(row?.count || 0));
+        }
+      );
+    });
+  }
+
+  async getAvailableTranslations(): Promise<Array<{ translation: string; verses: number }>> {
+    return new Promise((resolve, reject) => {
+      this.db.all(
+        `SELECT translation, COUNT(*) AS verses
+         FROM verses
+         GROUP BY translation
+         ORDER BY translation`,
+        [],
+        (err, rows: any[]) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(rows.map((row) => ({
+              translation: row.translation,
+              verses: Number(row.verses || 0),
+            })));
+          }
+        }
+      );
     });
   }
 
@@ -273,20 +370,36 @@ export class BibleDatabase {
     return { seeded: true, verses: SAMPLE_VERSES.length };
   }
 
-  async searchVerses(query: string, books?: string[], limit: number = 50): Promise<BibleVerse[]> {
-    return new Promise((resolve, reject) => {
+  async searchVerses(
+    query: string,
+    books?: string[],
+    limit: number = 50,
+    translation?: string,
+    options: TranslationLookupOptions = {}
+  ): Promise<BibleVerse[]> {
+    const preferredTranslation = this.normalizeTranslation(translation);
+    const allowFallback = options.fallback ?? true;
+    const runSearch = (useTranslationFilter: boolean) => new Promise<BibleVerse[]>((resolve, reject) => {
       const safeLimit = this.clampLimit(limit);
       const safeQuery = String(query || '').slice(0, 8000);
-      const safeBooks = books?.slice(0, 12).map((book) => String(book).slice(0, 80));
+      const safeBooks = books?.slice(0, 12).map((book) => String(book).slice(0, 80)).filter(Boolean);
       let sql = `
         SELECT * FROM verses 
-        WHERE text LIKE ? 
+        WHERE text LIKE ?
       `;
       const params: any[] = [`%${safeQuery}%`];
 
+      if (useTranslationFilter) {
+        sql += ' AND translation = ?';
+        params.push(preferredTranslation);
+      }
+
       if (safeBooks && safeBooks.length > 0) {
-        sql += ` AND book IN (${safeBooks.map(() => '?').join(',')})`;
-        params.push(...safeBooks);
+        const candidateBooks = [
+          ...new Set(safeBooks.flatMap((book) => getBookNameCandidates(book)).map((book) => book.toLowerCase()))
+        ];
+        sql += ` AND LOWER(book) IN (${candidateBooks.map(() => '?').join(',')})`;
+        params.push(...candidateBooks);
       }
 
       sql += ` ORDER BY book, chapter, verse LIMIT ?`;
@@ -296,105 +409,137 @@ export class BibleDatabase {
         if (err) {
           reject(err);
         } else {
-          const verses = rows.map(row => ({
-            book: row.book,
-            chapter: row.chapter,
-            verse: row.verse,
-            text: row.text,
-            translation: row.translation,
-            originalHebrew: row.original_hebrew,
-            originalGreek: row.original_greek,
-            strongNumbers: row.strong_numbers ? row.strong_numbers.split(',') : undefined
-          }));
+          const verses = rows.map((row) => this.mapVerseRow(row));
           resolve(verses);
         }
       });
     });
+
+    const preferredResults = await runSearch(true);
+    return preferredResults.length > 0 ? preferredResults : allowFallback ? await runSearch(false) : [];
   }
 
-  async getVerse(book: string, chapter: number, verse: number): Promise<BibleVerse | null> {
-    return new Promise((resolve, reject) => {
+  async getVerse(
+    book: string,
+    chapter: number,
+    verse: number,
+    translation?: string,
+    options: TranslationLookupOptions = {}
+  ): Promise<BibleVerse | null> {
+    const preferredTranslation = this.normalizeTranslation(translation);
+    const allowFallback = options.fallback ?? true;
+    const runLookup = (useTranslationFilter: boolean) => new Promise<BibleVerse | null>((resolve, reject) => {
+      const bookFilter = this.bookFilter(book);
+      const params: any[] = [...bookFilter.params, chapter, verse];
+      let sql = `SELECT * FROM verses WHERE ${bookFilter.clause} AND chapter = ? AND verse = ?`;
+
+      if (useTranslationFilter) {
+        sql += ' AND translation = ?';
+        params.push(preferredTranslation);
+      }
+
+      sql += ' ORDER BY translation = ? DESC, translation LIMIT 1';
+      params.push(preferredTranslation);
+
       this.db.get(
-        'SELECT * FROM verses WHERE book = ? AND chapter = ? AND verse = ?',
-        [book, chapter, verse],
+        sql,
+        params,
         (err, row: any) => {
           if (err) {
             reject(err);
           } else if (row) {
-            resolve({
-              book: row.book,
-              chapter: row.chapter,
-              verse: row.verse,
-              text: row.text,
-              translation: row.translation,
-              originalHebrew: row.original_hebrew,
-              originalGreek: row.original_greek,
-              strongNumbers: row.strong_numbers ? row.strong_numbers.split(',') : undefined
-            });
+            resolve(this.mapVerseRow(row));
           } else {
             resolve(null);
           }
         }
       );
     });
+
+    const preferredResult = await runLookup(true);
+    return preferredResult ?? (allowFallback ? await runLookup(false) : null);
   }
 
-  async getChapter(book: string, chapter: number): Promise<BibleVerse[]> {
-    return new Promise((resolve, reject) => {
+  async getChapter(
+    book: string,
+    chapter: number,
+    translation?: string,
+    options: TranslationLookupOptions = {}
+  ): Promise<BibleVerse[]> {
+    const preferredTranslation = this.normalizeTranslation(translation);
+    const allowFallback = options.fallback ?? true;
+    const runLookup = (useTranslationFilter: boolean) => new Promise<BibleVerse[]>((resolve, reject) => {
+      const bookFilter = this.bookFilter(book);
+      const params: any[] = [...bookFilter.params, chapter];
+      let sql = `SELECT * FROM verses WHERE ${bookFilter.clause} AND chapter = ?`;
+
+      if (useTranslationFilter) {
+        sql += ' AND translation = ?';
+        params.push(preferredTranslation);
+      }
+
+      sql += ' ORDER BY verse';
+
       this.db.all(
-        'SELECT * FROM verses WHERE book = ? AND chapter = ? ORDER BY verse',
-        [book, chapter],
+        sql,
+        params,
         (err, rows: any[]) => {
           if (err) {
             reject(err);
           } else {
-            resolve(rows.map(row => ({
-              book: row.book,
-              chapter: row.chapter,
-              verse: row.verse,
-              text: row.text,
-              translation: row.translation,
-              originalHebrew: row.original_hebrew,
-              originalGreek: row.original_greek,
-              strongNumbers: row.strong_numbers ? row.strong_numbers.split(',') : undefined
-            })));
+            resolve(rows.map((row) => this.mapVerseRow(row)));
           }
         }
       );
     });
+
+    const preferredResults = await runLookup(true);
+    return preferredResults.length > 0 ? preferredResults : allowFallback ? await runLookup(false) : [];
   }
 
-  async getPassage(book: string, chapter: number, startVerse: number, endVerse: number): Promise<BibleVerse[]> {
-    return new Promise((resolve, reject) => {
-      const safeStart = Math.max(1, Math.floor(startVerse));
-      const safeEnd = Math.min(
-        Math.max(safeStart, Math.floor(endVerse)),
-        safeStart + this.maxPassageVerses - 1
-      );
+  async getPassage(
+    book: string,
+    chapter: number,
+    startVerse: number,
+    endVerse: number,
+    translation?: string,
+    options: TranslationLookupOptions = {}
+  ): Promise<BibleVerse[]> {
+    const safeStart = Math.max(1, Math.floor(startVerse));
+    const safeEnd = Math.min(
+      Math.max(safeStart, Math.floor(endVerse)),
+      safeStart + this.maxPassageVerses - 1
+    );
+    const preferredTranslation = this.normalizeTranslation(translation);
+    const allowFallback = options.fallback ?? true;
+    const runLookup = (useTranslationFilter: boolean) => new Promise<BibleVerse[]>((resolve, reject) => {
+      const bookFilter = this.bookFilter(book);
+      const params: any[] = [...bookFilter.params, chapter, safeStart, safeEnd];
+      let sql = `SELECT * FROM verses
+         WHERE ${bookFilter.clause} AND chapter = ? AND verse >= ? AND verse <= ?`;
+
+      if (useTranslationFilter) {
+        sql += ' AND translation = ?';
+        params.push(preferredTranslation);
+      }
+
+      sql += ' ORDER BY verse';
 
       this.db.all(
-        `SELECT * FROM verses
-         WHERE book = ? AND chapter = ? AND verse >= ? AND verse <= ?
-         ORDER BY verse`,
-        [book, chapter, safeStart, safeEnd],
+        sql,
+        params,
         (err, rows: any[]) => {
           if (err) {
             reject(err);
           } else {
-            resolve(rows.map(row => ({
-              book: row.book,
-              chapter: row.chapter,
-              verse: row.verse,
-              text: row.text,
-              translation: row.translation,
-              originalHebrew: row.original_hebrew,
-              originalGreek: row.original_greek,
-              strongNumbers: row.strong_numbers ? row.strong_numbers.split(',') : undefined
-            })));
+            resolve(rows.map((row) => this.mapVerseRow(row)));
           }
         }
       );
     });
+
+    const preferredResults = await runLookup(true);
+    return preferredResults.length > 0 ? preferredResults : allowFallback ? await runLookup(false) : [];
   }
 
   async getCrossReferences(book: string, chapter: number, verse: number): Promise<CrossReference[]> {
@@ -432,11 +577,12 @@ export class BibleDatabase {
 
   async getHistoricalContext(book: string, chapter: number): Promise<HistoricalContext | null> {
     return new Promise((resolve, reject) => {
+      const bookFilter = this.bookFilter(book);
       this.db.get(
         `SELECT * FROM historical_context 
-         WHERE book = ? AND (chapter_start IS NULL OR chapter_start <= ?) 
+         WHERE ${bookFilter.clause} AND (chapter_start IS NULL OR chapter_start <= ?)
          AND (chapter_end IS NULL OR chapter_end >= ?)`,
-        [book, chapter, chapter],
+        [...bookFilter.params, chapter, chapter],
         (err, row: any) => {
           if (err) {
             reject(err);
@@ -457,9 +603,12 @@ export class BibleDatabase {
 
   async getLinguisticAnalysis(book: string, chapter: number, verse: number): Promise<LinguisticAnalysis[]> {
     return new Promise((resolve, reject) => {
+      const bookFilter = this.bookFilter(book);
       this.db.all(
-        'SELECT * FROM linguistic_analysis WHERE book = ? AND chapter = ? AND verse = ? ORDER BY word_position',
-        [book, chapter, verse],
+        `SELECT * FROM linguistic_analysis
+         WHERE ${bookFilter.clause} AND chapter = ? AND verse = ?
+         ORDER BY word_position`,
+        [...bookFilter.params, chapter, verse],
         (err, rows: any[]) => {
           if (err) {
             reject(err);
@@ -490,8 +639,9 @@ export class BibleDatabase {
       const params: any[] = [];
 
       if (book) {
-        sql += ` AND tv.book = ?`;
-        params.push(book);
+        const bookFilter = this.bookFilter(book);
+        sql += ` AND LOWER(tv.book) IN (${bookFilter.params.map(() => '?').join(',')})`;
+        params.push(...bookFilter.params);
       }
       if (chapter) {
         sql += ` AND tv.chapter = ?`;
@@ -513,21 +663,16 @@ export class BibleDatabase {
               SELECT v.* FROM verses v
               JOIN theme_verses tv ON v.book = tv.book AND v.chapter = tv.chapter AND v.verse = tv.verse
               WHERE tv.theme_id = ?
+              AND v.translation = ?
               LIMIT 5
             `;
             
             const keyVerses = await new Promise<BibleVerse[]>((versesResolve, versesReject) => {
-              this.db.all(keyVersesQuery, [row.id], (versesErr, versesRows: any[]) => {
+              this.db.all(keyVersesQuery, [row.id, this.defaultTranslation], (versesErr, versesRows: any[]) => {
                 if (versesErr) {
                   versesReject(versesErr);
                 } else {
-                  versesResolve(versesRows.map(v => ({
-                    book: v.book,
-                    chapter: v.chapter,
-                    verse: v.verse,
-                    text: v.text,
-                    translation: v.translation
-                  })));
+                  versesResolve(versesRows.map((v) => this.mapVerseRow(v)));
                 }
               });
             });
@@ -549,6 +694,31 @@ export class BibleDatabase {
 
   close(): void {
     this.db.close();
+  }
+
+  private mapVerseRow(row: any): BibleVerse {
+    return {
+      book: row.book,
+      chapter: row.chapter,
+      verse: row.verse,
+      text: row.text,
+      translation: row.translation,
+      originalHebrew: row.original_hebrew,
+      originalGreek: row.original_greek,
+      strongNumbers: row.strong_numbers ? row.strong_numbers.split(',') : undefined
+    };
+  }
+
+  private normalizeTranslation(translation?: string): string {
+    return String(translation || this.defaultTranslation || 'WEB').trim().toUpperCase();
+  }
+
+  private bookFilter(book: string): { clause: string; params: string[] } {
+    const candidates = getBookNameCandidates(book).map((candidate) => candidate.toLowerCase());
+    return {
+      clause: `LOWER(book) IN (${candidates.map(() => '?').join(',')})`,
+      params: candidates,
+    };
   }
 
   private clampLimit(limit: number): number {

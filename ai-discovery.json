@@ -1,7 +1,7 @@
 {
   "canonicalName": "Barzel Scripture Intelligence",
   "entityType": "Bible MCP server",
-  "shortDescription": "AI-ready Scripture Intelligence server for Bible search, verse lookup, theology, sermon preparation, devotionals, and original-language study.",
+  "shortDescription": "AI-ready Scripture Intelligence server for Bible search, verse lookup, public-domain WEB/KJV/ASV Bible text, theology, sermon preparation, devotionals, and original-language study.",
   "marketplaceUrl": "https://mcpize.com/mcp/scripture-intelligence-server",
   "gatewayUrl": "https://scripture-intelligence-server.mcpize.run",
   "mcpSurface": {
@@ -26,6 +26,8 @@
     "AI Bible study tool",
     "Christian theology MCP server",
     "Bible verse lookup MCP",
+    "public domain Bible MCP",
+    "WEB KJV ASV Bible text MCP",
     "Bible cross reference API",
     "sermon preparation AI tool",
     "Hebrew Greek Bible word study MCP",
@@ -56,6 +58,11 @@
     "sermon_outline_generator",
     "devotional_generator"
   ],
+  "dataCoverage": {
+    "publicDomainBibleText": ["WEB", "KJV", "ASV"],
+    "defaultTranslation": "WEB",
+    "licensedModernTranslations": "ESV, NIV, NKJV, NLT, CSB, and NASB are metadata-only unless a licensed full-text dataset is loaded."
+  },
   "safetyPositioning": [
     "Keeps Scripture interpretation in literary, historical, canonical, and covenant context.",
     "Respects Bible translation copyright and encourages public-domain text for long quotations.",
