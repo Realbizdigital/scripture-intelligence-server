@@ -186,7 +186,7 @@
     "configuration": {
       "databasePath": {
         "type": "string",
-        "default": "./scripture_intelligence.db",
+        "default": "./data/scripture_public_domain.corpus",
         "description": "Path to SQLite database file"
       },
       "defaultTranslation": {
@@ -235,7 +235,7 @@
                 "command": "node",
                 "args": ["./node_modules/scripture-intelligence-server/dist/server/index.js"],
                 "env": {
-                  "SCRIPTURE_DB_PATH": "./scripture_intelligence.db"
+                  "SCRIPTURE_DB_PATH": "./data/scripture_public_domain.corpus"
                 }
               }
             }
@@ -251,7 +251,7 @@
     },
     "data_sources": {
       "public_domain_bible_text": ["WEB", "KJV", "ASV"],
-      "bundled_sqlite_corpus": "scripture_intelligence.db",
+      "bundled_sqlite_corpus": "data/scripture_public_domain.corpus",
       "licensed_translation_metadata": ["ESV", "NIV", "NKJV", "NLT", "CSB", "NASB"],
       "original_languages": {
         "hebrew": "Curated Hebrew starter lexicon and Strong's examples",

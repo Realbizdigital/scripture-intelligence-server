@@ -1399,7 +1399,7 @@ function readNumberEnv(name: string, fallback: number): number {
 
 export function createConfigFromEnv(): ScriptureIntelligenceConfig {
   return {
-    databasePath: process.env.SCRIPTURE_DB_PATH || './scripture_intelligence.db',
+    databasePath: process.env.SCRIPTURE_DB_PATH || './data/scripture_public_domain.corpus',
     defaultTranslation: sanitizeText(process.env.DEFAULT_TRANSLATION || 'WEB', 16).toUpperCase(),
     enableOriginalLanguages: readBooleanEnv('ENABLE_ORIGINAL_LANGUAGES', true),
     enableHistoricalContext: readBooleanEnv('ENABLE_HISTORICAL_CONTEXT', true),

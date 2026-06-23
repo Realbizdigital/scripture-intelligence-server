@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Public-domain Bible corpus importer for WEB, KJV, and ASV using eBible USFM archives.
-- Bundled public-domain SQLite corpus for hosted runtimes that do not preserve setup-generated files.
+- Bundled `data/scripture_public_domain.corpus` SQLite corpus for hosted runtimes that do not preserve setup-generated files.
 - Translation-aware SQLite reads for verse, passage, chapter, search, resource, and comparison workflows.
 - Book-name normalization for common abbreviations and aliases such as Psalm/Psalms, Jn, and 1 Cor.
 - MCP translation metadata resources that report loaded public-domain text and licensing notes.

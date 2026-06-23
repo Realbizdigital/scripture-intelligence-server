@@ -61,7 +61,7 @@
   "dataCoverage": {
     "publicDomainBibleText": ["WEB", "KJV", "ASV"],
     "defaultTranslation": "WEB",
-    "bundledSQLiteCorpus": "scripture_intelligence.db",
+    "bundledSQLiteCorpus": "data/scripture_public_domain.corpus",
     "licensedModernTranslations": "ESV, NIV, NKJV, NLT, CSB, and NASB are metadata-only unless a licensed full-text dataset is loaded."
   },
   "safetyPositioning": [

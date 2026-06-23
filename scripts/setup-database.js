@@ -1,7 +1,7 @@
 import { BibleDatabase } from '../dist/database/bible-data.js';
 import { importPublicDomainTranslations, PUBLIC_DOMAIN_TRANSLATIONS } from '../dist/database/public-domain-importer.js';
 
-const dbPath = process.env.SCRIPTURE_DB_PATH || './scripture_intelligence.db';
+const dbPath = process.env.SCRIPTURE_DB_PATH || './data/scripture_public_domain.corpus';
 const defaultTranslation = (process.env.DEFAULT_TRANSLATION || 'WEB').toUpperCase();
 const quiet = process.argv.includes('--quiet') || process.env.SCRIPTURE_SEED_QUIET === '1';
 
