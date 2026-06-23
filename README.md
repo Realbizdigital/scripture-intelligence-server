@@ -10,8 +10,8 @@ Use it when you need a discoverable Christian AI Bible study server with natural
 - **Category**: Bible MCP server, Scripture AI tool, Christian theology MCP, AI Bible study assistant
 - **Best for**: Scripture search, verse lookup, passage analysis, sermon preparation, Bible study guides, devotionals, apologetics, cross-references, Hebrew word studies, Greek word studies, doctrine research, teaching and lesson planning
 - **MCP capabilities**: 54 tools, 36 resources, 75 prompts
-- **Marketplace**: https://mcpize.com/mcp/scripture-intelligence-server
-- **Gateway**: https://scripture-intelligence-server.mcpize.run
+- **Marketplace**: https://mcpize.com/mcp/barzel-scripture-intelligence
+- **Gateway**: https://barzel-scripture-intelligence.mcpize.run
 - **AI discovery resource**: `scripture://server/discovery`
 - **Machine-readable files**: `llms.txt`, `ai-discovery.json`, `schema.org.jsonld`
 - **High-intent searches**: Bible MCP server, Scripture Intelligence MCP, AI Bible study tool, Christian theology MCP server, Bible verse lookup MCP, sermon preparation AI tool, Bible cross reference API, Hebrew Greek Bible word study MCP, Christian devotional generator MCP
