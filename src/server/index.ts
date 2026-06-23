@@ -1,6 +1,8 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { pathToFileURL } from 'node:url';
+import { dirname, resolve } from 'node:path';
+import { existsSync } from 'node:fs';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   CallToolRequestSchema,
   GetPromptRequestSchema,
@@ -45,6 +47,8 @@ import {
 import { BibleVerse, ScriptureIntelligenceConfig } from '../types/index.js';
 
 const SERVER_VERSION = '1.1.0';
+const SERVER_DIR = dirname(fileURLToPath(import.meta.url));
+const PROJECT_ROOT = resolve(SERVER_DIR, '../..');
 
 export class ScriptureIntelligenceServer {
   private server: Server;
@@ -1399,13 +1403,22 @@ function readNumberEnv(name: string, fallback: number): number {
 
 export function createConfigFromEnv(): ScriptureIntelligenceConfig {
   return {
-    databasePath: process.env.SCRIPTURE_DB_PATH || './data/scripture_public_domain.corpus',
+    databasePath: process.env.SCRIPTURE_DB_PATH || getDefaultDatabasePath(),
     defaultTranslation: sanitizeText(process.env.DEFAULT_TRANSLATION || 'WEB', 16).toUpperCase(),
     enableOriginalLanguages: readBooleanEnv('ENABLE_ORIGINAL_LANGUAGES', true),
     enableHistoricalContext: readBooleanEnv('ENABLE_HISTORICAL_CONTEXT', true),
     enableTheologicalAnalysis: readBooleanEnv('ENABLE_THEOLOGICAL_ANALYSIS', true),
     cacheSize: clampPositiveInteger(readNumberEnv('CACHE_SIZE', 1000), 1000, 100000),
   };
+}
+
+function getDefaultDatabasePath(): string {
+  const bundledCorpus = resolve(PROJECT_ROOT, 'data/scripture_public_domain.corpus');
+  if (existsSync(bundledCorpus)) {
+    return bundledCorpus;
+  }
+
+  return resolve(PROJECT_ROOT, 'scripture_intelligence.db');
 }
 
 async function main() {
