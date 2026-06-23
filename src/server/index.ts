@@ -1,7 +1,8 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { dirname, resolve } from 'node:path';
-import { existsSync } from 'node:fs';
+import { copyFileSync, existsSync, statSync, unlinkSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   CallToolRequestSchema,
@@ -46,9 +47,11 @@ import {
 } from '../security/input-guard.js';
 import { BibleVerse, ScriptureIntelligenceConfig } from '../types/index.js';
 
-const SERVER_VERSION = '1.1.0';
+const SERVER_VERSION = '1.1.1';
 const SERVER_DIR = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(SERVER_DIR, '../..');
+const MINIMUM_FULL_CORPUS_BYTES = 10_000_000;
+let disposableRuntimeCorpus: string | undefined;
 
 export class ScriptureIntelligenceServer {
   private server: Server;
@@ -1413,13 +1416,34 @@ export function createConfigFromEnv(): ScriptureIntelligenceConfig {
 }
 
 function getDefaultDatabasePath(): string {
-  const bundledCorpus = resolve(PROJECT_ROOT, 'data/scripture_public_domain.corpus');
-  if (existsSync(bundledCorpus)) {
-    return bundledCorpus;
+  const bundledCandidates = [
+    resolve(SERVER_DIR, '../data/scripture_public_domain.corpus'),
+    resolve(PROJECT_ROOT, 'data/scripture_public_domain.corpus'),
+    resolve(process.cwd(), 'dist/data/scripture_public_domain.corpus'),
+    resolve(process.cwd(), 'data/scripture_public_domain.corpus'),
+  ];
+  const bundledCorpus = bundledCandidates.find(
+    (candidate) => existsSync(candidate) && statSync(candidate).size >= MINIMUM_FULL_CORPUS_BYTES
+  );
+
+  if (bundledCorpus) {
+    const runtimeCorpus = resolve(
+      tmpdir(),
+      `barzel-scripture-intelligence-${SERVER_VERSION}-${process.pid}.db`
+    );
+    copyFileSync(bundledCorpus, runtimeCorpus);
+    disposableRuntimeCorpus = runtimeCorpus;
+    return runtimeCorpus;
   }
 
-  return resolve(PROJECT_ROOT, 'scripture_intelligence.db');
+  return resolve(tmpdir(), `barzel-scripture-intelligence-${process.pid}.db`);
 }
+
+process.once('exit', () => {
+  if (disposableRuntimeCorpus && existsSync(disposableRuntimeCorpus)) {
+    unlinkSync(disposableRuntimeCorpus);
+  }
+});
 
 async function main() {
   const server = new ScriptureIntelligenceServer(createConfigFromEnv());

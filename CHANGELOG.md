@@ -5,6 +5,14 @@ All notable changes to Scripture Intelligence Server will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-06-24
+
+### Fixed
+- Package the complete public-domain Scripture corpus inside `dist` so MCPize production images retain WEB, KJV, and ASV.
+- Copy the bundled corpus to a per-process writable temporary database at startup to avoid SQLite locking between MCP sessions.
+- Start the hosted runtime directly from compiled code without depending on build-only database scripts.
+- Add a deployment regression test that verifies each bundled translation contains more than 30,000 verses.
+
 ## [1.1.0] - 2026-06-23
 
 ### Added

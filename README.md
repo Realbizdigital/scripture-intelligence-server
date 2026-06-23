@@ -210,7 +210,7 @@ The server includes:
 - **Historical Data**: Cultural and historical context seed records for major biblical sections
 - **Theological Themes**: Systematic theology framework and study scaffolds
 
-The repository ships `data/scripture_public_domain.corpus` so hosted runtimes such as MCPize are immediately usable without startup downloads. Run `npm run setup:database` to rebuild it from source archives. Use `SCRIPTURE_IMPORT_TRANSLATIONS=WEB` to import only WEB, or `SCRIPTURE_IMPORT_PUBLIC_DOMAIN=0` to skip corpus import for tests/offline development.
+The repository ships `data/scripture_public_domain.corpus` so hosted runtimes such as MCPize are immediately usable without startup downloads. The build copies this corpus into `dist/data`, and startup creates an isolated writable runtime copy for each server process. Run `npm run setup:database` to rebuild it from source archives. Use `SCRIPTURE_IMPORT_TRANSLATIONS=WEB` to import only WEB, or `SCRIPTURE_IMPORT_PUBLIC_DOMAIN=0` to skip corpus import for tests/offline development.
 
 ## Configuration Options
 
