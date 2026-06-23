@@ -505,7 +505,8 @@ export function buildResourcePayload(
     payload = {
       uri,
       defaultTranslation: 'WEB',
-      note: 'Full-text setup imports public-domain WEB, KJV, and ASV by default. Copyrighted modern translations are metadata-only unless licensed text is loaded.',
+      bundledSQLiteCorpus: 'scripture_intelligence.db',
+      note: 'The repository ships a public-domain SQLite corpus for WEB, KJV, and ASV. Setup can rebuild it from eBible USFM archives. Copyrighted modern translations are metadata-only unless licensed text is loaded.',
       translations: [
         { id: 'WEB', name: 'World English Bible', publicDomain: true, bundledBySetup: true },
         { id: 'KJV', name: 'King James Version', publicDomain: true, bundledBySetup: true },

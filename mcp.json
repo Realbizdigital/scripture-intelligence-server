@@ -251,6 +251,7 @@
     },
     "data_sources": {
       "public_domain_bible_text": ["WEB", "KJV", "ASV"],
+      "bundled_sqlite_corpus": "scripture_intelligence.db",
       "licensed_translation_metadata": ["ESV", "NIV", "NKJV", "NLT", "CSB", "NASB"],
       "original_languages": {
         "hebrew": "Curated Hebrew starter lexicon and Strong's examples",

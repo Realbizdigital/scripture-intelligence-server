@@ -203,14 +203,14 @@ Get historical and cultural context.
 ## Data Sources
 
 The server includes:
-- **Bible Text**: Complete public-domain WEB, KJV, and ASV text imported from eBible USFM archives during database setup
+- **Bible Text**: A bundled SQLite corpus with complete public-domain WEB, KJV, and ASV text generated from eBible USFM archives
 - **Modern Translation Metadata**: ESV, NIV, NKJV, NLT, CSB, and NASB are listed for comparison metadata, but full text is not bundled unless a properly licensed dataset is loaded
 - **Original-Language Study**: Curated Hebrew and Greek starter lexicon, Strong's-number examples, and per-verse sample language records
 - **Cross-References**: Curated starter cross-references and dynamic passage/search tools; larger cross-reference datasets should be loaded only with compatible licensing
 - **Historical Data**: Cultural and historical context seed records for major biblical sections
 - **Theological Themes**: Systematic theology framework and study scaffolds
 
-Run `npm run setup:database` before production use. By default it builds the project, seeds starter study data, and imports WEB, KJV, and ASV into SQLite. Use `SCRIPTURE_IMPORT_TRANSLATIONS=WEB` to import only WEB, or `SCRIPTURE_IMPORT_PUBLIC_DOMAIN=0` to skip corpus import for tests/offline development.
+The repository ships `scripture_intelligence.db` so hosted runtimes such as MCPize are immediately usable without startup downloads. Run `npm run setup:database` to rebuild it from source archives. Use `SCRIPTURE_IMPORT_TRANSLATIONS=WEB` to import only WEB, or `SCRIPTURE_IMPORT_PUBLIC_DOMAIN=0` to skip corpus import for tests/offline development.
 
 ## Configuration Options
 

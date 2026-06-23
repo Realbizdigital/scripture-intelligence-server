@@ -22,7 +22,7 @@ describe('BibleDatabase', () => {
       chapter: 3,
       verse: 16,
       text: 'For God so loved the world.',
-      translation: 'ESV',
+      translation: 'WEB',
       originalHebrew: null,
       originalGreek: null,
       strongNumbers: ['G25'],
@@ -34,7 +34,7 @@ describe('BibleDatabase', () => {
       chapter: 3,
       verse: 16,
       text: 'For God so loved the world.',
-      translation: 'ESV',
+      translation: 'WEB',
       originalHebrew: null,
       originalGreek: null,
       strongNumbers: ['G25'],
@@ -53,7 +53,7 @@ describe('BibleDatabase', () => {
         chapter: 119,
         verse,
         text: `Your word gives light ${verse}`,
-        translation: 'ESV',
+        translation: 'WEB',
       });
     }
 
