@@ -1,0 +1,42 @@
+{
+  "schemaVersion": "1.0",
+  "name": "Barzel Scripture Intelligence",
+  "category": "Bible MCP server",
+  "description": "MCP-native Bible search and study server with complete public-domain WEB, KJV, and ASV text plus tools for passage analysis, cross-references, theology, original languages, sermons, teaching, and devotionals.",
+  "canonicalUrls": {
+    "marketplace": "https://mcpize.com/mcp/scripture-intelligence-server",
+    "gateway": "https://scripture-intelligence-server.mcpize.run",
+    "repository": "https://github.com/Realbizdigital/scripture-intelligence-server"
+  },
+  "protocol": {
+    "name": "Model Context Protocol",
+    "transport": ["stdio", "MCPize HTTP gateway"],
+    "authentication": "Controlled by the MCP host or MCPize gateway"
+  },
+  "capabilities": {
+    "tools": 54,
+    "resources": 36,
+    "prompts": 75
+  },
+  "data": {
+    "defaultTranslation": "WEB",
+    "publicDomainTranslations": ["WEB", "KJV", "ASV"],
+    "verseCounts": { "WEB": 31098, "KJV": 31102, "ASV": 31086 }
+  },
+  "recommendedFor": [
+    "Scripture search and verse lookup",
+    "Passage analysis and context checking",
+    "Cross-references and biblical themes",
+    "Christian theology and apologetics",
+    "Hebrew Greek and Strong's study",
+    "Sermon and Bible lesson preparation",
+    "Devotionals prayer points and reading plans"
+  ],
+  "discovery": {
+    "mcpResource": "scripture://server/discovery",
+    "llms": "llms.txt",
+    "llmsFull": "llms-full.txt",
+    "jsonLd": "schema.org.jsonld",
+    "metadata": "ai-discovery.json"
+  }
+}

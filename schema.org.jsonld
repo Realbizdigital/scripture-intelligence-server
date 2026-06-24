@@ -1,47 +1,105 @@
 {
   "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  "name": "Barzel Scripture Intelligence",
-  "alternateName": [
-    "Scripture Intelligence Server",
-    "Bible MCP Server",
-    "Scripture Intelligence MCP"
-  ],
-  "applicationCategory": "AIApplication",
-  "operatingSystem": "MCP-compatible clients",
-  "url": "https://mcpize.com/mcp/scripture-intelligence-server",
-  "downloadUrl": "https://scripture-intelligence-server.mcpize.run",
-  "description": "Barzel Scripture Intelligence is a Bible MCP server for public-domain WEB, KJV, and ASV Scripture search, verse lookup, Christian theology, sermon preparation, cross-references, Hebrew and Greek word studies, devotionals, apologetics, and AI-assisted Bible study.",
-  "keywords": [
-    "Bible MCP server",
-    "Scripture Intelligence MCP",
-    "AI Bible study tool",
-    "public domain Bible MCP",
-    "WEB KJV ASV Bible text MCP",
-    "Christian theology MCP server",
-    "Bible verse lookup MCP",
-    "Bible cross reference API",
-    "sermon preparation AI tool",
-    "Hebrew Greek Bible word study MCP",
-    "Christian devotional generator MCP",
-    "apologetics Bible AI"
-  ],
-  "featureList": [
-    "Natural language Scripture search",
-    "Public-domain WEB, KJV, and ASV Bible verse lookup",
-    "Passage analysis",
-    "Cross-reference discovery",
-    "Christian doctrine research",
-    "Apologetics",
-    "Hebrew and Greek word studies",
-    "Sermon outline generation",
-    "Bible study guide generation",
-    "Devotional generation"
-  ],
-  "offers": {
-    "@type": "Offer",
-    "price": "0",
-    "priceCurrency": "USD",
-    "availability": "https://schema.org/InStock"
-  }
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "@id": "https://mcpize.com/mcp/scripture-intelligence-server#software",
+      "name": "Barzel Scripture Intelligence",
+      "alternateName": [
+        "Scripture Intelligence Server",
+        "Scripture Intelligence MCP",
+        "Bible MCP Server",
+        "Christian Bible Study MCP"
+      ],
+      "applicationCategory": "EducationalApplication",
+      "applicationSubCategory": "Bible study and Christian theology MCP server",
+      "operatingSystem": "MCP-compatible clients",
+      "softwareVersion": "1.1.3",
+      "url": "https://mcpize.com/mcp/scripture-intelligence-server",
+      "codeRepository": "https://github.com/Realbizdigital/scripture-intelligence-server",
+      "installUrl": "https://mcpize.com/mcp/scripture-intelligence-server",
+      "description": "Bible MCP server with 54 tools for public-domain WEB, KJV, and ASV Scripture search, verse lookup, passage analysis, cross-references, Christian theology, Hebrew and Greek study, sermon preparation, teaching, and devotionals.",
+      "isAccessibleForFree": true,
+      "inLanguage": "en",
+      "keywords": "Bible MCP server, Scripture search MCP, AI Bible study tool, Bible verse lookup, public domain Bible API, WEB Bible, KJV Bible, ASV Bible, Christian theology MCP, sermon preparation AI, Bible cross references, Hebrew word study, Greek word study, Strong's lookup, devotional generator",
+      "featureList": [
+        "54 MCP tools, 36 resources, and 75 prompts",
+        "Natural-language Scripture search",
+        "Complete public-domain WEB, KJV, and ASV Bible text",
+        "Verse, passage, chapter, and book study workflows",
+        "Cross-references and parallel passages",
+        "Christian doctrine and apologetics tools",
+        "Hebrew, Greek, Strong's, and interlinear study helpers",
+        "Sermon, lesson, Bible study, quiz, devotional, and prayer generators"
+      ],
+      "sameAs": [
+        "https://github.com/Realbizdigital/scripture-intelligence-server",
+        "https://scripture-intelligence-server.mcpize.run"
+      ],
+      "publisher": {
+        "@type": "Organization",
+        "name": "Real Biz Digital"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "@type": "Dataset",
+      "@id": "https://mcpize.com/mcp/scripture-intelligence-server#corpus",
+      "name": "Barzel Scripture Intelligence Public-Domain Bible Corpus",
+      "description": "Bundled Scripture corpus containing 31,098 WEB verses, 31,102 KJV verses, and 31,086 ASV verses.",
+      "isPartOf": {
+        "@id": "https://mcpize.com/mcp/scripture-intelligence-server#software"
+      },
+      "license": [
+        "https://ebible.org/web/copyright.htm",
+        "https://ebible.org/find/details.php?id=eng-kjv",
+        "https://ebible.org/find/details.php?id=eng-asv"
+      ],
+      "inLanguage": "en",
+      "isAccessibleForFree": true
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://mcpize.com/mcp/scripture-intelligence-server#faq",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is Barzel Scripture Intelligence?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Barzel Scripture Intelligence is a Bible MCP server that gives AI clients 54 tools for Scripture search, verse lookup, passage analysis, cross-references, Christian theology, original-language study, sermon preparation, teaching, and devotionals."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Which Bible translations are included?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "The server bundles complete public-domain World English Bible, King James Version, and American Standard Version text. Copyrighted modern translations require separately licensed data."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can it help prepare sermons and Bible lessons?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. It includes sermon outlines, sermon research, Bible study guides, lesson plans, discussion questions, quizzes, memory verses, devotionals, prayer points, and reading plans."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does it support Hebrew and Greek Bible study?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. It provides Hebrew and Greek word studies, Strong's lookup, interlinear assistance, original-language explanations, and word-usage workflows using curated study data."
+          }
+        }
+      ]
+    }
+  ]
 }

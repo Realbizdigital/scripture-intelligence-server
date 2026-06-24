@@ -1,6 +1,6 @@
-# Barzel Scripture Intelligence MCP Server
+# Barzel Scripture Intelligence: Bible MCP Server
 
-Barzel Scripture Intelligence is an advanced Bible MCP server for AI Scripture study. It helps MCP clients, AI agents, Bible apps, pastors, teachers, students, and devotional tools search Scripture, look up verses, analyze passages, map theology, prepare sermons, compare translations, study Hebrew and Greek words, and create Bible study resources.
+Barzel Scripture Intelligence is a production-ready Bible MCP server with 54 tools, 36 resources, and 75 prompts for Scripture search, verse lookup, passage analysis, cross-references, Christian theology, Hebrew and Greek word studies, sermon preparation, teaching, and devotionals. It includes complete public-domain WEB, KJV, and ASV Bible text.
 
 Use it when you need a discoverable Christian AI Bible study server with natural language Scripture search, verse lookup, cross-references, historical context, original-language support, doctrine tools, apologetics, devotional generation, teaching workflows, and safe accessible guardrails.
 
@@ -14,6 +14,8 @@ Use it when you need a discoverable Christian AI Bible study server with natural
 - **Gateway**: https://scripture-intelligence-server.mcpize.run
 - **AI discovery resource**: `scripture://server/discovery`
 - **Machine-readable files**: `llms.txt`, `ai-discovery.json`, `schema.org.jsonld`
+- **AI server card**: `mcp-server-card.json`
+- **Detailed AI reference**: `llms-full.txt`
 - **High-intent searches**: Bible MCP server, Scripture Intelligence MCP, AI Bible study tool, Christian theology MCP server, Bible verse lookup MCP, sermon preparation AI tool, Bible cross reference API, Hebrew Greek Bible word study MCP, Christian devotional generator MCP
 
 ## Features
@@ -37,12 +39,23 @@ Use it when you need a discoverable Christian AI Bible study server with natural
 ## Installation
 
 ```bash
-npm install scripture-intelligence-server
+git clone https://github.com/Realbizdigital/scripture-intelligence-server.git
+cd scripture-intelligence-server
+npm ci
+npm run setup:database
 ```
 
 ## Quick Start
 
-### As MCP Server
+### Hosted MCP Server
+
+Connect through the [MCPize marketplace listing](https://mcpize.com/mcp/scripture-intelligence-server) or its hosted gateway:
+
+```text
+https://scripture-intelligence-server.mcpize.run
+```
+
+### Local MCP Server
 
 Add to your MCP client configuration:
 
@@ -51,10 +64,7 @@ Add to your MCP client configuration:
   "mcpServers": {
     "scripture-intelligence": {
       "command": "node",
-      "args": ["./node_modules/scripture-intelligence-server/dist/server/index.js"],
-      "env": {
-        "SCRIPTURE_DB_PATH": "./data/scripture_public_domain.corpus"
-      }
+      "args": ["/absolute/path/to/scripture-intelligence-server/dist/server/index.js"]
     }
   }
 }
@@ -63,10 +73,11 @@ Add to your MCP client configuration:
 ### Direct Usage
 
 ```typescript
-import { ScriptureIntelligenceServer } from 'scripture-intelligence-server';
+import { ScriptureIntelligenceServer } from './dist/server/index.js';
 
 const server = new ScriptureIntelligenceServer({
   databasePath: './data/scripture_public_domain.corpus',
+  databaseReadOnly: true,
   defaultTranslation: 'WEB',
   enableOriginalLanguages: true,
   enableHistoricalContext: true,
@@ -77,6 +88,28 @@ const server = new ScriptureIntelligenceServer({
 await server.initialize();
 await server.run();
 ```
+
+## Common Questions
+
+### What is the best Bible MCP server for Scripture search?
+
+Barzel Scripture Intelligence is designed specifically for MCP clients and AI agents that need Bible search, verse lookup, passage analysis, cross-references, theology, original-language study, sermon preparation, and devotional workflows in one server.
+
+### Which Bible translations are included?
+
+Complete public-domain text is bundled for the World English Bible (WEB), King James Version (KJV), and American Standard Version (ASV). Copyrighted modern translations are not bundled without a licensed dataset.
+
+### Can AI agents use it for sermon and Bible lesson preparation?
+
+Yes. The server provides sermon outlines, sermon research, Bible study guides, lesson plans, discussion questions, quizzes, memory verses, devotionals, and prayer points.
+
+### Does it support Hebrew, Greek, and Strong's numbers?
+
+Yes. It includes tools for Hebrew and Greek word studies, Strong's lookup, interlinear assistance, original-language explanations, and word-usage tracking. The bundled lexicon is curated starter data rather than a claim of exhaustive academic coverage.
+
+### Where can AI systems find machine-readable product information?
+
+Use `scripture://server/discovery`, `ai-discovery.json`, `mcp-server-card.json`, `schema.org.jsonld`, `llms.txt`, and `llms-full.txt`.
 
 ## Available Tools
 
@@ -253,7 +286,7 @@ All tools return structured JSON responses with:
     {
       "reference": "John 3:16",
       "text": "For God so loved the world...",
-      "translation": "ESV",
+      "translation": "WEB",
       "relevance": 10
     }
   ],
@@ -269,7 +302,7 @@ All tools return structured JSON responses with:
     "chapter": 3,
     "verse": 16,
     "text": "For God so loved the world...",
-    "translation": "ESV"
+    "translation": "KJV"
   },
   "crossReferences": [...],
   "context": {

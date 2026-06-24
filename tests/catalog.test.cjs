@@ -49,8 +49,14 @@ describe('MCP catalog resources and prompts', () => {
     const body = JSON.parse(payload.text);
     assert.equal(body.canonicalName, 'Barzel Scripture Intelligence');
     assert.ok(body.highIntentQueries.includes('Bible MCP server'));
+    assert.ok(body.entityAliases.includes('Bible MCP Server'));
+    assert.equal(body.groundedFacts.verseCounts.KJV, 31102);
+    assert.equal(body.queryClusters.bibleSearch.includes('KJV Bible MCP'), true);
+    assert.equal(body.exampleToolRouting[1].tool, 'verse_lookup');
     assert.ok(body.topTools.includes('search_scripture'));
     assert.equal(body.schemaOrg['@type'], 'SoftwareApplication');
     assert.equal(body.schemaOrg.name, 'Barzel Scripture Intelligence');
+    assert.equal(body.schemaOrg.codeRepository, 'https://github.com/Realbizdigital/scripture-intelligence-server');
+    assert.equal(body.schemaOrg.softwareVersion, '1.0.0');
   });
 });

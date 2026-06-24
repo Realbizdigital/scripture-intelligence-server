@@ -47,7 +47,7 @@ import {
 } from '../security/input-guard.js';
 import { BibleVerse, ScriptureIntelligenceConfig } from '../types/index.js';
 
-const SERVER_VERSION = '1.1.2';
+const SERVER_VERSION = '1.1.3';
 const SERVER_DIR = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(SERVER_DIR, '../..');
 const MINIMUM_FULL_CORPUS_BYTES = 10_000_000;
