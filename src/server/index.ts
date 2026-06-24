@@ -1,7 +1,7 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { dirname, resolve } from 'node:path';
-import { copyFileSync, existsSync, statSync, unlinkSync } from 'node:fs';
+import { existsSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
@@ -47,11 +47,10 @@ import {
 } from '../security/input-guard.js';
 import { BibleVerse, ScriptureIntelligenceConfig } from '../types/index.js';
 
-const SERVER_VERSION = '1.1.1';
+const SERVER_VERSION = '1.1.2';
 const SERVER_DIR = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(SERVER_DIR, '../..');
 const MINIMUM_FULL_CORPUS_BYTES = 10_000_000;
-let disposableRuntimeCorpus: string | undefined;
 
 export class ScriptureIntelligenceServer {
   private server: Server;
@@ -81,7 +80,11 @@ export class ScriptureIntelligenceServer {
       }
     );
 
-    this.db = new BibleDatabase(config.databasePath, config.defaultTranslation);
+    this.db = new BibleDatabase(
+      config.databasePath,
+      config.defaultTranslation,
+      config.databaseReadOnly
+    );
     this.queryProcessor = new QueryProcessor();
     this.crossRefEngine = new CrossReferenceEngine(this.db);
     this.contextAnalyzer = new ContextAnalyzer(this.db);
@@ -354,6 +357,7 @@ export class ScriptureIntelligenceServer {
           promptNames: SCRIPTURE_PROMPTS.map((prompt) => prompt.name),
           config: {
             databaseConfigured: Boolean(this.config.databasePath),
+            databaseReadOnly: this.config.databaseReadOnly,
             defaultTranslation: this.config.defaultTranslation,
             enableOriginalLanguages: this.config.enableOriginalLanguages,
             enableHistoricalContext: this.config.enableHistoricalContext,
@@ -1405,8 +1409,14 @@ function readNumberEnv(name: string, fallback: number): number {
 }
 
 export function createConfigFromEnv(): ScriptureIntelligenceConfig {
+  const explicitDatabasePath = process.env.SCRIPTURE_DB_PATH;
+  const defaultDatabase = getDefaultDatabaseConfig();
+
   return {
-    databasePath: process.env.SCRIPTURE_DB_PATH || getDefaultDatabasePath(),
+    databasePath: explicitDatabasePath || defaultDatabase.path,
+    databaseReadOnly: explicitDatabasePath
+      ? readBooleanEnv('SCRIPTURE_DB_READ_ONLY', false)
+      : defaultDatabase.readOnly,
     defaultTranslation: sanitizeText(process.env.DEFAULT_TRANSLATION || 'WEB', 16).toUpperCase(),
     enableOriginalLanguages: readBooleanEnv('ENABLE_ORIGINAL_LANGUAGES', true),
     enableHistoricalContext: readBooleanEnv('ENABLE_HISTORICAL_CONTEXT', true),
@@ -1415,7 +1425,7 @@ export function createConfigFromEnv(): ScriptureIntelligenceConfig {
   };
 }
 
-function getDefaultDatabasePath(): string {
+function getDefaultDatabaseConfig(): { path: string; readOnly: boolean } {
   const bundledCandidates = [
     resolve(SERVER_DIR, '../data/scripture_public_domain.corpus'),
     resolve(PROJECT_ROOT, 'data/scripture_public_domain.corpus'),
@@ -1427,23 +1437,14 @@ function getDefaultDatabasePath(): string {
   );
 
   if (bundledCorpus) {
-    const runtimeCorpus = resolve(
-      tmpdir(),
-      `barzel-scripture-intelligence-${SERVER_VERSION}-${process.pid}.db`
-    );
-    copyFileSync(bundledCorpus, runtimeCorpus);
-    disposableRuntimeCorpus = runtimeCorpus;
-    return runtimeCorpus;
+    return { path: bundledCorpus, readOnly: true };
   }
 
-  return resolve(tmpdir(), `barzel-scripture-intelligence-${process.pid}.db`);
+  return {
+    path: resolve(tmpdir(), `barzel-scripture-intelligence-${process.pid}.db`),
+    readOnly: false,
+  };
 }
-
-process.once('exit', () => {
-  if (disposableRuntimeCorpus && existsSync(disposableRuntimeCorpus)) {
-    unlinkSync(disposableRuntimeCorpus);
-  }
-});
 
 async function main() {
   const server = new ScriptureIntelligenceServer(createConfigFromEnv());

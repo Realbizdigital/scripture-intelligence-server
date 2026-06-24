@@ -14,17 +14,43 @@ type TranslationLookupOptions = {
 };
 
 export class BibleDatabase {
-  private db: sqlite3.Database;
+  private db!: sqlite3.Database;
+  private readonly openPromise: Promise<void>;
+  private readonly readOnly: boolean;
   private readonly maxSearchLimit = 50;
   private readonly maxPassageVerses = 200;
   private readonly defaultTranslation: string;
 
-  constructor(dbPath: string, defaultTranslation = 'WEB') {
-    this.db = new sqlite3.Database(dbPath);
+  constructor(dbPath: string, defaultTranslation = 'WEB', readOnly = false) {
+    this.readOnly = readOnly;
+    const mode = readOnly
+      ? sqlite3.OPEN_READONLY
+      : sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE;
+    this.openPromise = new Promise((resolve, reject) => {
+      this.db = new sqlite3.Database(dbPath, mode, (error) => {
+        if (error) reject(error);
+        else resolve();
+      });
+    });
     this.defaultTranslation = this.normalizeTranslation(defaultTranslation);
   }
 
   async initialize(): Promise<void> {
+    await this.openPromise;
+
+    if (this.readOnly) {
+      return new Promise((resolve, reject) => {
+        this.db.get(
+          "SELECT COUNT(*) AS count FROM sqlite_master WHERE type = 'table' AND name = 'verses'",
+          (error, row: { count?: number } | undefined) => {
+            if (error) reject(error);
+            else if (!row?.count) reject(new Error('The read-only Scripture database is missing the verses table.'));
+            else resolve();
+          }
+        );
+      });
+    }
+
     return new Promise((resolve, reject) => {
       this.db.serialize(() => {
         // Create verses table

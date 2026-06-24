@@ -1,6 +1,6 @@
 {
   "name": "scripture-intelligence-server",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Barzel Scripture Intelligence: a Bible MCP server for Scripture search, verse lookup, theology, sermon prep, cross-references, Hebrew and Greek word studies, devotionals, and Christian AI Bible study workflows",
   "main": "dist/server/index.js",
   "types": "dist/server/index.d.ts",

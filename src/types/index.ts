@@ -77,6 +77,7 @@ export interface NaturalLanguageQuery {
 
 export interface ScriptureIntelligenceConfig {
   databasePath: string;
+  databaseReadOnly: boolean;
   defaultTranslation: string;
   enableOriginalLanguages: boolean;
   enableHistoricalContext: boolean;

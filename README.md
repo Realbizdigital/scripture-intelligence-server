@@ -210,7 +210,7 @@ The server includes:
 - **Historical Data**: Cultural and historical context seed records for major biblical sections
 - **Theological Themes**: Systematic theology framework and study scaffolds
 
-The repository ships `data/scripture_public_domain.corpus` so hosted runtimes such as MCPize are immediately usable without startup downloads. The build copies this corpus into `dist/data`, and startup creates an isolated writable runtime copy for each server process. Run `npm run setup:database` to rebuild it from source archives. Use `SCRIPTURE_IMPORT_TRANSLATIONS=WEB` to import only WEB, or `SCRIPTURE_IMPORT_PUBLIC_DOMAIN=0` to skip corpus import for tests/offline development.
+The repository ships `data/scripture_public_domain.corpus` so hosted runtimes such as MCPize are immediately usable without startup downloads. The build copies this corpus into `dist/data`, and hosted sessions share it in read-only mode for efficient concurrency. Custom database paths remain writable unless `SCRIPTURE_DB_READ_ONLY=1` is set. Run `npm run setup:database` to rebuild the corpus from source archives. Use `SCRIPTURE_IMPORT_TRANSLATIONS=WEB` to import only WEB, or `SCRIPTURE_IMPORT_PUBLIC_DOMAIN=0` to skip corpus import for tests/offline development.
 
 ## Configuration Options
 
@@ -319,6 +319,7 @@ npx mcpize deploy
 The server reads deployment configuration from environment variables:
 
 - `SCRIPTURE_DB_PATH` (default: `./data/scripture_public_domain.corpus`)
+- `SCRIPTURE_DB_READ_ONLY` (default: `false` for custom paths; bundled corpus is read-only)
 - `DEFAULT_TRANSLATION` (default: `WEB`)
 - `SCRIPTURE_IMPORT_PUBLIC_DOMAIN` (default: `true`)
 - `SCRIPTURE_IMPORT_TRANSLATIONS` (default: `WEB,KJV,ASV`)

@@ -1,6 +1,6 @@
 {
   "name": "Barzel Scripture Intelligence",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Barzel Scripture Intelligence is an advanced Bible MCP server for public-domain WEB, KJV, and ASV Scripture search, verse lookup, Christian theology, sermon preparation, cross-references, original-language Hebrew and Greek word studies, devotionals, apologetics, and AI-assisted Bible study.",
   "author": "Scripture Intelligence Team",
   "license": "MIT",
@@ -273,6 +273,11 @@
       "discussions": "https://github.com/Realbizdigital/scripture-intelligence-server/discussions"
     },
     "changelog": {
+      "1.1.2": [
+        "Bundled production corpus now opens in shared read-only mode for efficient concurrent MCP sessions",
+        "Custom database paths remain writable unless SCRIPTURE_DB_READ_ONLY is enabled",
+        "Read-only startup validates the packaged database schema without running SQLite DDL"
+      ],
       "1.1.1": [
         "MCPize production images now retain the complete bundled WEB, KJV, and ASV corpus",
         "Runtime database copies use isolated temporary files to prevent SQLite session locking",
